@@ -7,6 +7,7 @@ signal province_selected
 @onready var camera_socket: Node3D = $CameraSocket
 
 #Camera move
+var camera_touchpad_move:Vector2 = Vector2.ZERO
 @export_range(0,1000,1) var camera_move_speed:float = 500.0
 
 #Camera rotate
@@ -60,11 +61,13 @@ func camera_base_move(delta:float) -> void:
 	if !camera_can_move_base: return
 	var velocity_direction: Vector3 = Vector3.ZERO
 	
+	
 	if Input.is_action_pressed("camera_forward"): velocity_direction -= transform.basis.z
 	if Input.is_action_pressed("camera_backward"): velocity_direction += transform.basis.z
 	if Input.is_action_pressed("camera_right"): velocity_direction += transform.basis.x
 	if Input.is_action_pressed("camera_left"): velocity_direction -= transform.basis.x
-	
+	velocity_direction.x += camera_touchpad_move.x
+	velocity_direction.z += camera_touchpad_move.y
 	position += velocity_direction.normalized() * camera_move_speed  * delta
 
 
@@ -74,12 +77,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	if Input.is_action_pressed("Exit"):
 		get_tree().quit()
 	
+	#Camera Move
+	if event is InputEventPanGesture:
+		camera_touchpad_move = event.delta
+
 	
 	#Camera Zoom
 	if event.is_action("camera_zoom_in"):
 		camera_zoom_direction = -1
 	elif  event.is_action("camera_zoom_out"):
 		camera_zoom_direction = 1
+	if event is InputEventMagnifyGesture:
+		camera_zoom_direction = 1-event.factor
+	
 	
 	#Camera rotations
 	if event.is_action_pressed("camera_rotate_right"):
