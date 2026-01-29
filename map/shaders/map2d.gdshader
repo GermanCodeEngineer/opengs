@@ -5,7 +5,8 @@ uniform sampler2D color_map_image: source_color, filter_nearest;
 
 void fragment() {
 	// Variables
-	float normalized_offset = 100.0 / float(textureSize(color_map_image,0).y);
+	// Must be syncronized with map.gd
+	float normalized_offset = (256.0 / 3.0) / float(textureSize(color_map_image,0).y);
 	float checkers_width = 10.0;
 	float texture_width = float(textureSize(lookup_image,0).x);
 	float texture_height = float(textureSize(lookup_image,0).y);

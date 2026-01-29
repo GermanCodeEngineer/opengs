@@ -23,7 +23,7 @@ var camera_rotation_direction:float = 0
 
 #Camera zoom
 var camera_zoom_direction:float = 0
-@export_range(0.9,1.2,0.01) var camera_zoom_factor:float = 2.5
+@export_range(0.9,4,0.1) var camera_zoom_factor:float = 2.5
 @export_range(0,100,1) var camera_zoom_min:float = 40.0
 @export_range(0,1000,1) var camera_zoom_max:float = 1000.0
 @export_range(0,2,0.1) var camera_zoom_direction_damp:float = 0.93

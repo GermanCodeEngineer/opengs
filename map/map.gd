@@ -4,13 +4,24 @@ extends StaticBody3D
 @onready var map_material_2d = load("res://map/shaders/map2D.tres")
 @onready var color_map_political:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
 @onready var color_map_ideology:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
+@onready var color_map_states:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
+@onready var color_map_provinces:Image = Image.create(256,256,false,Image.FORMAT_RGB8)
+
+# Must be syncronyzed with map2d.gdshader
+@warning_ignore("integer_division")
+const map_channel_0 = 256 / 3 * 0
+@warning_ignore("integer_division")
+const map_channel_1 = 256 / 3 * 1
+@warning_ignore("integer_division")
+const map_channel_2 = 256 / 3 * 2
+
 
 var current_map_mode:Image
 var color_map_texture:ImageTexture
 
 var previously_selected_provinces :PackedColorArray
 
-enum MapMode {POLITICAL, IDEOLOGY}
+enum MapMode {POLITICAL, IDEOLOGY, STATES, PROVINCES}
 
 func _ready() -> void:
 	create_lookup_texture()
@@ -43,15 +54,20 @@ func create_color_map() -> void:
 		var x = lookup.r * 255
 		var y = lookup.g * 255
 		var province:Province = get_parent().get_node("Provinces").color_to_province.get(province_color)
+		first_sibling = province.get_parent().get_children()[0]
 		if province.type == "land":
 			var owner_color :Color = province.province_owner.color
 			var controller_color :Color = province.province_controller.color
-			color_map_political.set_pixel(x,y,owner_color)
-			color_map_political.set_pixel(x,y+100,controller_color)
+			color_map_political.set_pixel(x,y+map_channel_0,owner_color)
+			color_map_political.set_pixel(x,y+map_channel_1,controller_color)
 			var owner_ideology_color :Color = province.province_owner.ideology_color
 			var controller_ideology_color :Color = province.province_controller.ideology_color
-			color_map_ideology.set_pixel(x,y,owner_ideology_color)
-			color_map_ideology.set_pixel(x,y+100,controller_ideology_color)
+			color_map_ideology.set_pixel(x,y+map_channel_0,owner_ideology_color)
+			color_map_ideology.set_pixel(x,y+map_channel_1,controller_ideology_color)
+			
+			color_map_states.set_pixel(x, y+map_channel_0, province.color)
+			color_map_states.set_pixel(x, y+map_channel_1, province.color)
+			color_map_provinces.set_pixel(x, y+map_channel_2, )
 
 func update_color_map(input_color:Color, output_color:Color, offset:int) -> void:
 	var lookup = province_color_to_lookup.get(input_color,null)
@@ -60,6 +76,7 @@ func update_color_map(input_color:Color, output_color:Color, offset:int) -> void
 		var y = lookup.g * 255
 		color_map_political.set_pixel(x,y+offset,output_color)
 		color_map_ideology.set_pixel(x,y+offset,output_color)
+		color_map_states.set_pixel(x,y+offset,output_color)
 		current_map_mode.set_pixel(x,y+offset,output_color)
 	
 	
@@ -74,21 +91,25 @@ func set_map_mode_political() -> void:
 func set_map_mode_ideology() -> void:
 	current_map_mode = color_map_ideology
 	update_map_shader()
+
+func set_map_mode_states() -> void:
+	current_map_mode = color_map_states
+	update_map_shader()
 	
 func highlight_province(selected_province) -> void:
 	deselect_provinces()
 	if selected_province.type == "land":
 		for province in selected_province.get_parent().get_children():
-			update_color_map(province.color, Color(0.6, 0.6, 0.6), 200)
+			update_color_map(province.color, Color(0.6, 0.6, 0.6), map_channel_2)
 			previously_selected_provinces.append(province.color)
 			
-	update_color_map(selected_province.color, Color("Green"), 200)
+	update_color_map(selected_province.color, Color("Green"), map_channel_2)
 	update_map_shader()
 	previously_selected_provinces.append(selected_province.color)
 	
 func deselect_provinces() -> void:
 	for color in previously_selected_provinces:
-		update_color_map(color, Color("BLACK"), 200)
+		update_color_map(color, Color("BLACK"), map_channel_2)
 	previously_selected_provinces.clear()
 
 
@@ -98,6 +119,8 @@ func _on_map_modes_map_mode_selected(mode: Variant) -> void:
 			set_map_mode_political()
 		MapMode.IDEOLOGY:
 			set_map_mode_ideology()
+		MapMode.STATES:
+			set_map_mode_states()
 
 func create_country_labels() -> void:
 	var country_label_template: PackedScene = load("res://map/country_label_template.tscn")
