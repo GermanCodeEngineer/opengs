@@ -23,10 +23,10 @@ var camera_rotation_direction:float = 0
 
 #Camera zoom
 var camera_zoom_direction:float = 0
-@export_range(0,1000,1) var camera_zoom_speed:float = 1000.0
+@export_range(0.9,1.2,0.01) var camera_zoom_factor:float = 2.5
 @export_range(0,100,1) var camera_zoom_min:float = 40.0
 @export_range(0,1000,1) var camera_zoom_max:float = 1000.0
-@export_range(0,2,1) var camera_zoom_speed_damp:float = 0.92
+@export_range(0,2,0.1) var camera_zoom_direction_damp:float = 0.93
 
 #flags
 var camera_can_process:bool = true
@@ -114,9 +114,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func camera_zoom_update(delta:float) -> void:
 	if !camera_can_zoom:return
 	
-	var new_zoom:float = clamp(camera.position.z + camera_zoom_speed * camera_zoom_direction * delta, camera_zoom_min, camera_zoom_max)
+	var new_zoom:float = camera.position.z * pow(camera_zoom_factor, camera_zoom_direction * delta)
+	new_zoom = clamp(new_zoom, camera_zoom_min, camera_zoom_max)
 	camera.position.z = new_zoom
-	camera_zoom_direction *= camera_zoom_speed_damp
+	camera_zoom_direction *= camera_zoom_direction_damp
 
 # Rotate the camera socket based on mouse offset
 func camera_rotate_to_mouse_offsets(delta:float) -> void:
