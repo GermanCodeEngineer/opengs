@@ -79,7 +79,7 @@ func highlight_province(selected_province) -> void:
 	deselect_provinces()
 	if selected_province.type == "land":
 		for province in selected_province.get_parent().get_children():
-			update_color_map(province.color, Color("WHITE"), 200)
+			update_color_map(province.color, Color(0.6, 0.6, 0.6), 200)
 			previously_selected_provinces.append(province.color)
 			
 	update_color_map(selected_province.color, Color("Green"), 200)
