@@ -23,6 +23,8 @@ func _ready() -> void:
 	create_countries("BEN","Benelux",Color("bb5711ff"),"Democratic")
 	create_countries("SER","Serbia",Color("3c39a8ff"),"Democratic")
 	create_countries("IRL","Ireland",Color("1e9028ff"),"Democratic")
+	create_countries("ISL","Iceland",Color("3d8584ff"),"Democratic")
+	create_countries("FIN","Finland",Color("956e51ff"),"Democratic")
 	
 func create_countries(tag, country_name, color, ideology):
 	var country:Country = Country.new()
