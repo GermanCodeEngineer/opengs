@@ -32,6 +32,11 @@ text = "Ideology"
 layout_mode = 2
 text = "States"
 
+[node name="ButtonProvinces" type="Button" parent="PanelContainer/GridContainer"]
+layout_mode = 2
+text = "Provinces"
+
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonPolitical" to="." method="_on_button_political_button_up"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonIdeology" to="." method="_on_button_ideology_button_up"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonStates" to="." method="_on_button_states_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonProvinces" to="." method="_on_button_provinces_button_up"]
