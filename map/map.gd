@@ -44,6 +44,8 @@ func create_lookup_texture() -> void:
 				if color_map_r == 256:
 					color_map_r = 0
 					color_map_g += 1
+					if color_map_g == map_channel_1:
+						push_error("Too many provinces! Max is 256*85 = %d" % (256*85))
 			lookup_image.set_pixel(x,y,province_color_to_lookup[province_color])
 	var lookup_texture = ImageTexture.create_from_image(lookup_image)
 	map_material_2d.set_shader_parameter("lookup_image", lookup_texture)
@@ -54,12 +56,12 @@ func create_color_map() -> void:
 		var x = lookup.r * 255
 		var y = lookup.g * 255
 		var province:Province = get_parent().get_node("Provinces").color_to_province.get(province_color)
-		var first_sibling :Province = province.get_parent().get_children()[0]
 		if province.type == "land":
+			var first_sibling :Province = province.get_parent().get_children()[0]
 			var owner_color :Color = province.province_owner.color
 			var controller_color :Color = province.province_controller.color
 			color_map_political.set_pixel(x,y+map_channel_0,owner_color)
-			color_map_political.set_pixel(x,y+map_channel_1,controller_color)
+			color_map_political.set_pixel(x,y+map_channel_1,Color("222"))
 			var owner_ideology_color :Color = province.province_owner.ideology_color
 			var controller_ideology_color :Color = province.province_controller.ideology_color
 			color_map_ideology.set_pixel(x,y+map_channel_0,owner_ideology_color)
@@ -69,6 +71,16 @@ func create_color_map() -> void:
 			color_map_states.set_pixel(x, y+map_channel_1, first_sibling.color)
 			color_map_provinces.set_pixel(x, y+map_channel_0, province.color)
 			color_map_provinces.set_pixel(x, y+map_channel_1, province.color)
+		else:
+			# Ocean/sea provinces - set both channels to black to avoid checkerboard artifacts
+			color_map_political.set_pixel(x,y+map_channel_0,Color.BLACK)
+			color_map_political.set_pixel(x,y+map_channel_1,Color.BLACK)
+			color_map_ideology.set_pixel(x,y+map_channel_0,Color.BLACK)
+			color_map_ideology.set_pixel(x,y+map_channel_1,Color.BLACK)
+			color_map_states.set_pixel(x,y+map_channel_0,Color.BLACK)
+			color_map_states.set_pixel(x,y+map_channel_1,Color.BLACK)
+			color_map_provinces.set_pixel(x,y+map_channel_0,Color.BLACK)
+			color_map_provinces.set_pixel(x,y+map_channel_1,Color.BLACK)
 
 func update_color_map(input_color:Color, output_color:Color, offset:int) -> void:
 	var lookup = province_color_to_lookup.get(input_color,null)

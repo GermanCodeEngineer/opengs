@@ -3,7 +3,7 @@ extends Node
 func _ready() -> void:
 	create_countries("NNN","No Name",Color("TRANSPARENT"),"Communist")
 	create_countries("FRA","France",Color("BLUE"),"Democratic")
-	create_countries("DEU","Germany",Color("BLACK"),"Democratic")
+	create_countries("DEU","Germany",Color("#444"),"Democratic")
 	create_countries("ITA","Italy",Color("WEB_GREEN"),"Democratic")
 	create_countries("ESP","Spain",Color("GOLD"),"Democratic")
 	create_countries("NOR","Norway",Color("DARK_RED"),"Democratic")

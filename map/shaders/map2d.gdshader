@@ -10,20 +10,37 @@ void fragment() {
 	float checkers_width = 10.0;
 	float texture_width = float(textureSize(lookup_image,0).x);
 	float texture_height = float(textureSize(lookup_image,0).y);
-	int checkers_pattern = int(mod(floor(UV.x * texture_width / checkers_width) + floor(UV.y * texture_height / checkers_width), 2.0));
+	
+	// Calculate pixel position instead of using UV directly to avoid precision issues
+	vec2 pixel_pos = floor(UV * vec2(texture_width, texture_height));
+	int checkers_pattern = int(mod(floor(pixel_pos.x / checkers_width) + floor(pixel_pos.y / checkers_width), 2.0));
 
 	// Textures
-
 	vec3 lookup_texture = texture(lookup_image, UV).rgb;
-	vec4 map_mode_primary = texture(color_map_image, vec2(lookup_texture.r,lookup_texture.g));
-	vec4 map_mode_secondary = texture(color_map_image, vec2(lookup_texture.r,lookup_texture.g + normalized_offset));
-	vec4 selected_color = texture(color_map_image, vec2(lookup_texture.r,lookup_texture.g + 2.0*normalized_offset));
+	vec4 map_mode_primary = texture(color_map_image, vec2(lookup_texture.r, lookup_texture.g));
+	vec4 map_mode_secondary = texture(color_map_image, vec2(lookup_texture.r, lookup_texture.g + normalized_offset));
+	vec4 selected_color = texture(color_map_image, vec2(lookup_texture.r, lookup_texture.g + 2.0*normalized_offset));
 
-	// Set checkers
-	vec4 final_color = mix(map_mode_primary,map_mode_secondary,float(checkers_pattern));
-
-	// Show selected provinces
-	final_color = mix(final_color, selected_color, step(0.5, float(selected_color.rgb != vec3(0.0))));
+	// Apply checkerboard pattern between primary and secondary
+	vec4 final_color;
+	bool use_secondary = false;
+	
+	if (checkers_pattern == 0) {
+		final_color = map_mode_primary;
+	} else {
+		final_color = map_mode_secondary;
+		use_secondary = true;
+	}
+	
+	// Override with selection if present and flag to skip AA
+	if (selected_color.rgb != vec3(0.0)) {
+		final_color = selected_color;
+		final_color.a = 0.0; // Skip AA for selections
+	} else if (use_secondary) {
+		final_color.a = 0.0; // Skip AA for secondar color
+	} else {
+		final_color.a = 1.0; // Apply AA for primary color only
+	}
 
 	COLOR = final_color;
 }
