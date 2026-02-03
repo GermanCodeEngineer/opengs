@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://b62uxcw6bw4d6"]
+
+[ext_resource type="Shader" uid="uid://btphu3wypjt2g" path="res://map/map_shaders/map2d.gdshader" id="1_b51fn"]
+[ext_resource type="Texture2D" uid="uid://dr1ln02ta5p8w" path="res://map/map_data/cmap_preview.png" id="2_h1t4f"]
+[ext_resource type="Texture2D" uid="uid://bhfoh0dxlx25l" path="res://map/map_data/lut_preview.png" id="3_6i2h2"]
+
+[resource]
+resource_local_to_scene = true
+shader = ExtResource("1_b51fn")
+shader_parameter/lookup_image = ExtResource("3_6i2h2")
+shader_parameter/color_map_image = ExtResource("2_h1t4f")

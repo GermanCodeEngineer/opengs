@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://uwfcduh1f75g"]
+
+[ext_resource type="Script" uid="uid://b6tm5j21ut3yo" path="res://editor/editor.gd" id="1_ycap1"]
+[ext_resource type="PackedScene" uid="uid://bw5bx75nyr0ua" path="res://map/map.tscn" id="2_fjngd"]
+[ext_resource type="PackedScene" uid="uid://c3qoli5ipe8qr" path="res://editor/controller/controller.tscn" id="3_er7c6"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_er7c6"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_j82do"]
+sky_material = SubResource("ProceduralSkyMaterial_er7c6")
+
+[sub_resource type="Environment" id="Environment_6j37k"]
+background_mode = 2
+sky = SubResource("Sky_j82do")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="Editor" type="Node3D" unique_id=1733269734]
+script = ExtResource("1_ycap1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=666524815]
+environment = SubResource("Environment_6j37k")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1045693937]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
+
+[node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
+
+[connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]

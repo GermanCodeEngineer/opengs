@@ -8,23 +8,17 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="Open Grand Strategy"
 config/description="This open-source Grand Strategy game is built to emulate the style made popular by Paradox and similar games."
-run/main_scene="uid://b6hm5mv4x2n7f"
-config/features=PackedStringArray("4.5", "Forward Plus")
-config/icon="res://icon.svg"
-
-[autoload]
-
-Globals="*res://scripts/globals.gd"
-
-[file_customization]
-
-folder_colors={
-"res://wip/": "gray"
-}
+run/main_scene="uid://brtj1cxo2025q"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="uid://p4g3h4kdig2e"
 
 [gui]
 
