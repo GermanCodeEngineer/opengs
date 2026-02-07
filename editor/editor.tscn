@@ -29,10 +29,15 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545
 shadow_enabled = true
 
 [node name="Map" parent="." unique_id=1988879255 instance=ExtResource("2_fjngd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1173172, -0.05265808, 0.16524506)
 
 [node name="Controller" parent="." unique_id=1906052589 instance=ExtResource("3_er7c6")]
 
 [node name="ProvinceEditor" parent="." unique_id=1907813086 instance=ExtResource("4_j82do")]
 
 [connection signal="province_selected" from="Controller" to="." method="_on_controller_province_selected"]
-[connection signal="connect_to_database" from="ProvinceEditor" to="." method="_on_province_editor_connect_to_database"]
+[connection signal="change_controller" from="ProvinceEditor" to="." method="_on_province_editor_change_controller"]
+[connection signal="change_controller_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_controller_territory"]
+[connection signal="change_owner" from="ProvinceEditor" to="." method="_on_province_editor_change_owner"]
+[connection signal="change_owner_territory" from="ProvinceEditor" to="." method="_on_province_editor_change_owner_territory"]
+[connection signal="change_type" from="ProvinceEditor" to="." method="_on_province_editor_change_type"]

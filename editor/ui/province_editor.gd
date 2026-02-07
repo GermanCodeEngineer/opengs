@@ -3,37 +3,48 @@ extends CanvasLayer
 @onready var province_id = $PanelContainer/GridContainer/LabelProvinceID
 @onready var province_color = $PanelContainer/GridContainer/ColorPickerProvinceColor
 @onready var province_type = $PanelContainer/GridContainer/OBProvinceType
-@onready var province_owner = $PanelContainer/GridContainer/LabelOwner
-@onready var province_controller = $PanelContainer/GridContainer/LabelController
+@onready var province_owner = $PanelContainer/GridContainer/OBProvinceOwner
+@onready var province_controller = $PanelContainer/GridContainer/OBProvinceController
+@onready var territory_owner = $PanelContainer/GridContainer/OBTerritoryOwner
+@onready var territory_controller = $PanelContainer/GridContainer/OBTerritoryController
+
+
 @onready var province_territory = $PanelContainer/GridContainer/LabelTerritory
 @onready var province_center = $PanelContainer/GridContainer/LabelPosition
 
-signal connect_to_database
+signal change_type
+signal change_owner
+signal change_controller
+signal change_owner_territory
+signal change_controller_territory
 
 var database: Database
-var selected_province: Province 
 
-
+var country_order: Dictionary[int, String]
+var country_order_rev: Dictionary[String, int]
 
 func _ready() -> void:
-	connect_to_database.emit()
-	populate_type_button()
+	pass
 	
 
+func populate_buttons() -> void:
+	populate_type_button()
+	populate_owner_button()
+
 func update_labels(province: Province):
-	selected_province = province
 	province_id.text  = str(province.id)
 	province_color.color = province.color
 	province_type.select(province.type)
-
+	territory_owner.select(-1)
+	territory_controller.select(-1)
 	province_center.text = str(province.center)
 	province_territory.text = str(province.territory.id)
 	if province.type == Province.Type.LAND:
-		province_owner.text = province.province_owner.tag
-		province_controller.text = province.province_controller.tag	
+		province_owner.select(country_order_rev[province.province_owner.tag])
+		province_controller.select(country_order_rev[province.province_controller.tag])
 	else:
-		province_owner.text = ""
-		province_controller.text = ""
+		province_owner.select(-1)
+		province_controller.select(-1)
 
 
 func _on_button_gen_prv_button_up() -> void:
@@ -43,8 +54,39 @@ func _on_button_gen_prv_button_up() -> void:
 
 
 func _on_ob_province_type_item_selected(index: int) -> void:
-	selected_province.type = index
+	change_type.emit(index)
 
 func populate_type_button() -> void:
 	for type in Province.Type:
 		province_type.add_item(type)
+
+func populate_owner_button() -> void:
+	var i: int = 0
+	for tag in database.tag_to_country:
+		province_owner.add_item(tag)
+		province_controller.add_item(tag)
+		territory_owner.add_item(tag)
+		territory_controller.add_item(tag)
+		country_order[i] = tag
+		country_order_rev[tag] = i
+		i += 1
+
+
+func _on_ob_province_owner_item_selected(index: int) -> void:
+	var new_owner: Country = database.tag_to_country[country_order[index]]
+	change_owner.emit(new_owner)
+
+
+func _on_ob_province_controller_item_selected(index: int) -> void:
+	var new_controller: Country = database.tag_to_country[country_order[index]]
+	change_controller.emit(new_controller)
+
+
+func _on_ob_territory_owner_item_selected(index: int) -> void:
+	var new_owner: Country = database.tag_to_country[country_order[index]]
+	change_owner_territory.emit(new_owner)
+
+
+func _on_ob_territory_controller_item_selected(index: int) -> void:
+	var new_controller: Country = database.tag_to_country[country_order[index]]
+	change_controller_territory.emit(new_controller)

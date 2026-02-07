@@ -9,10 +9,11 @@ var mm_ideology: MapMode
 var current_map_mode: MapMode
 var current_highlight: MapHighlight
 
+var all_map_modes: Array[MapMode]
+
 
 func _ready() -> void:
-	lut = LookupTexture.new(province_image)
-	map_material_2d.set_shader_parameter("lookup_image", lut) #TEMP
+	create_lookup_texture()
 
 
 func get_pixel_color(mouse_pos: Vector2) -> Color:
@@ -20,11 +21,17 @@ func get_pixel_color(mouse_pos: Vector2) -> Color:
 	var offset_y  = int(province_image.get_height()/2.0)
 	return province_image.get_pixel(int(mouse_pos.x * 10) + offset_x, int(mouse_pos.y * 10) + offset_y)
 
+func create_lookup_texture() -> void:
+	lut = LookupTexture.new(province_image)
+	map_material_2d.set_shader_parameter("lookup_image", lut)
+	lut.get_image().save_png("res://map/map_data/lut_preview.png")
 
 func create_map_modes(database) -> void:
 	mm_political = MapMode.new(lut.province_color_to_lookup, database.color_to_province, MapMode.Type.POLITICAL)
 	mm_ideology = MapMode.new(lut.province_color_to_lookup, database.color_to_province, MapMode.Type.IDEOLOGY)
+	all_map_modes = [mm_political, mm_ideology]
 	set_map_mode(MapMode.Type.POLITICAL)
+	mm_political.get_image().save_png("res://map/map_data/cmap_preview.png")
 
 
 func update_map() -> void:
@@ -42,6 +49,10 @@ func set_map_mode(map_mode: MapMode.Type) -> void:
 	if current_highlight != null:
 		current_map_mode = current_highlight.apply_highlights(current_map_mode)
 	update_map()
+	
+func update_map_modes(province: Province, country: Country, offset: int) -> void:
+	for mm in all_map_modes:
+		mm.update_color_map(province.color, country.map_color, offset)
 
 
 

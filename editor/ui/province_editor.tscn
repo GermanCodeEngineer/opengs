@@ -40,18 +40,32 @@ text = "Province Type"
 [node name="OBProvinceType" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=1769255039]
 layout_mode = 2
 
-[node name="Label2" type="Label" parent="PanelContainer/GridContainer" unique_id=914180718]
+[node name="LabelProvinceOwner" type="Label" parent="PanelContainer/GridContainer" unique_id=914180718]
 layout_mode = 2
 text = "Owner"
 
-[node name="LabelOwner" type="Label" parent="PanelContainer/GridContainer" unique_id=309395467]
+[node name="OBProvinceOwner" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=1615870089]
 layout_mode = 2
 
-[node name="Label6" type="Label" parent="PanelContainer/GridContainer" unique_id=1524076642]
+[node name="LabelProvinceController" type="Label" parent="PanelContainer/GridContainer" unique_id=1524076642]
 layout_mode = 2
 text = "Controller"
 
-[node name="LabelController" type="Label" parent="PanelContainer/GridContainer" unique_id=1882949919]
+[node name="OBProvinceController" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=2067000131]
+layout_mode = 2
+
+[node name="LabelTerritoryOwner" type="Label" parent="PanelContainer/GridContainer" unique_id=1693257800]
+layout_mode = 2
+text = "Territory Owner"
+
+[node name="OBTerritoryOwner" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=246299723]
+layout_mode = 2
+
+[node name="LabelTerritoryController" type="Label" parent="PanelContainer/GridContainer" unique_id=1768499235]
+layout_mode = 2
+text = "Territory Controller"
+
+[node name="OBTerritoryController" type="OptionButton" parent="PanelContainer/GridContainer" unique_id=603762964]
 layout_mode = 2
 
 [node name="Label4" type="Label" parent="PanelContainer/GridContainer" unique_id=2146071504]
@@ -73,4 +87,8 @@ layout_mode = 2
 text = "Generate Province History"
 
 [connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceType" to="." method="_on_ob_province_type_item_selected"]
+[connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceOwner" to="." method="_on_ob_province_owner_item_selected"]
+[connection signal="item_selected" from="PanelContainer/GridContainer/OBProvinceController" to="." method="_on_ob_province_controller_item_selected"]
+[connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritoryOwner" to="." method="_on_ob_territory_owner_item_selected"]
+[connection signal="item_selected" from="PanelContainer/GridContainer/OBTerritoryController" to="." method="_on_ob_territory_controller_item_selected"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonGenPRV" to="." method="_on_button_gen_prv_button_up"]
