@@ -2,7 +2,7 @@ extends Resource
 
 class_name Province
 
-enum Type { LAND, LAKE, OCEAN}
+enum Type { LAND, LAKE, OCEAN }
 
 var id: String
 var color: Color

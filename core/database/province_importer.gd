@@ -24,11 +24,9 @@ func import_history(db: Database) -> void:
 		var province: Province = db.id_to_province[pid]
 		var data = read_json(folder + pid + ".json")
 		if province.type == Province.Type.LAND:
+			province.province_owner = db.tag_to_country["NNN"]
+			province.province_controller = db.tag_to_country["NNN"]
 			if data.has("province_owner"):
 				province.province_owner = db.tag_to_country[data["province_owner"]]
-			else:
-				province.province_owner = db.tag_to_country["NNN"]
 			if data.has("province_controller"):
 				province.province_controller = db.tag_to_country[data["province_controller"]]
-			else:
-				province.province_controller = db.tag_to_country["NNN"]

@@ -7,6 +7,7 @@ extends CanvasLayer
 @onready var province_territory = $PanelContainer/GridContainer/LabelTerritory
 @onready var province_center = $PanelContainer/GridContainer/LabelPosition
 
+
 func update_labels(province: Province):
 	province_id.text  = str(province.id)
 	province_color.color = province.color

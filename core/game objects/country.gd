@@ -2,7 +2,7 @@ extends Resource
 
 class_name Country
 
-enum Ideology { DEMOCRACY, COMMUNISM}
+enum Ideology { DEMOCRACY, COMMUNISM }
 
 var tag: String
 var map_color: Color
