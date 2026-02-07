@@ -5,6 +5,7 @@ uniform sampler2D color_map_image: source_color, filter_nearest;
 
 void fragment() {
 	// Variables
+	// Must match MapMode.SECONDARY_OFFSET (150) in map_mode.gd
 	float normalized_offset = 150.0 / float(textureSize(color_map_image,0).y);
 	float checkers_width = 10.0;
 	float texture_width = float(textureSize(lookup_image,0).x);
@@ -20,6 +21,7 @@ void fragment() {
 
 	vec4 map_mode_primary = texture(color_map_image, color_map_uv);
 	vec4 map_mode_secondary = texture(color_map_image, color_map_uv + vec2(0.0, normalized_offset));
+	// 2.0 * normalized_offset = MapMode.HIGHLIGHT_OFFSET (300) in map_mode.gd
 	vec4 selected_color = texture(color_map_image, color_map_uv + vec2(0.0, 2.0 * normalized_offset));
 	
 	// Set checkers

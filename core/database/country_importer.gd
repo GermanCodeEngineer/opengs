@@ -29,3 +29,5 @@ func import_history(db: Database) -> void:
 					country.ideology = Country.Ideology.DEMOCRACY
 				"COMMUNISM":
 					country.ideology = Country.Ideology.COMMUNISM
+				_:
+					push_warning("Unknown ideology '%s' for country %s" % [data["ideology"], tag])

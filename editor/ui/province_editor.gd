@@ -12,11 +12,12 @@ extends CanvasLayer
 @onready var province_territory = $PanelContainer/GridContainer/LabelTerritory
 @onready var province_center = $PanelContainer/GridContainer/LabelPosition
 
-signal change_type
-signal change_owner
-signal change_controller
-signal change_owner_territory
-signal change_controller_territory
+signal change_type(index: int)
+signal change_owner(owner: Country)
+signal change_controller(controller: Country)
+signal change_owner_territory(owner: Country)
+signal change_controller_territory(controller: Country)
+signal export_requested
 
 var database: Database
 
@@ -48,9 +49,7 @@ func update_labels(province: Province):
 
 
 func _on_button_gen_prv_button_up() -> void:
-	var exporter = ProvinceExporter.new()
-	exporter.write_definition(database)
-	exporter.write_history(database)
+	export_requested.emit()
 
 
 func _on_ob_province_type_item_selected(index: int) -> void:
