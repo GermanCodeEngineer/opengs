@@ -3,6 +3,9 @@ extends StaticBody3D
 @onready var province_image: Image = $MeshInstance3D/SubViewport/Sprite2D.texture.get_image()
 @onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
 
+var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
+
+
 var lut: LookupTexture
 var mm_political: MapMode
 var mm_ideology: MapMode
@@ -26,14 +29,24 @@ func create_lookup_texture() -> void:
 	map_material_2d.set_shader_parameter("lookup_image", lut)
 	lut.get_image().save_png("res://map/map_data/lut_preview.png")
 
-func create_map_modes(database) -> void:
-	mm_political = MapMode.new(lut.province_color_to_lookup, database.color_to_province, MapMode.Type.POLITICAL)
-	mm_ideology = MapMode.new(lut.province_color_to_lookup, database.color_to_province, MapMode.Type.IDEOLOGY)
+func create_map_modes(db: Database) -> void:
+	mm_political = MapMode.new(lut.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
+	mm_ideology = MapMode.new(lut.province_color_to_lookup, db.color_to_province, MapMode.Type.IDEOLOGY)
 	all_map_modes = [mm_political, mm_ideology]
 	set_map_mode(MapMode.Type.POLITICAL)
 	mm_political.get_image().save_png("res://map/map_data/cmap_preview.png")
-
-
+	
+func create_country_labels(db: Database) -> void:
+	for country: Country in db.tag_to_country.values():
+		var country_label: CountryLabel = country_label_scene.instantiate()
+		country_label.initial_data(country)
+		%CountryLabels.add_child(country_label)
+		country_label.update_data(country)
+		
+func update_country_label(country: Country) -> void:
+	var label: CountryLabel = %CountryLabels.get_node(country.tag)
+	label.update_data(country)
+	
 func update_map() -> void:
 	map_material_2d.set_shader_parameter("color_map_image", current_map_mode)
 

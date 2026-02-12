@@ -23,6 +23,9 @@ func import_history(db: Database) -> void:
 			var c = data["map_color"]
 			country.map_color = Color(c[0], c[1], c[2])
 
+		if data.has("base_name"):
+			country.base_name = data["base_name"]
+
 		if data.has("ideology"):
 			match data["ideology"]:
 				"DEMOCRACY":

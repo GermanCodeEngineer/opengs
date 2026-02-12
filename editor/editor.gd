@@ -6,6 +6,7 @@ var selected_province: Province
 func _ready() -> void:
 	DataImporter.new(db)
 	$Map.create_map_modes(db)
+	$Map.create_country_labels(db)
 	$ProvinceEditor.database = db
 	$ProvinceEditor.populate_buttons()
 
@@ -18,9 +19,12 @@ func _on_controller_province_selected(mouse_pos: Vector2) -> void:
 
 
 func _on_province_editor_change_owner(province_owner: Country) -> void:
+	var old_owner: Country = selected_province.province_owner
 	selected_province.province_owner = province_owner
 	$Map.update_map_modes(selected_province, selected_province.province_owner, MapMode.PRIMARY_OFFSET)
 	$Map.update_map()
+	$Map.update_country_label(province_owner)
+	$Map.update_country_label(old_owner)
 
 
 func _on_province_editor_change_controller(controller: Country) -> void:
@@ -30,10 +34,16 @@ func _on_province_editor_change_controller(controller: Country) -> void:
 
 
 func _on_province_editor_change_owner_territory(province_owner: Country) -> void:
+	var old_owner_list: Array[Country]
 	for province: Province in selected_province.territory.provinces:
+		if province.province_owner not in old_owner_list:
+			old_owner_list.append(province.province_owner)
 		province.province_owner = province_owner
 		$Map.update_map_modes(province, province_owner, MapMode.PRIMARY_OFFSET)
 	$Map.update_map()
+	$Map.update_country_label(province_owner)
+	for old_owner: Country in old_owner_list:
+		$Map.update_country_label(old_owner)
 	
 	
 
@@ -53,3 +63,7 @@ func _on_province_editor_export_requested() -> void:
 	var exporter = ProvinceExporter.new()
 	exporter.write_definition(db)
 	exporter.write_history(db)
+
+
+func _on_province_editor_change_territory(new_territory: Territory) -> void:
+	selected_province.territory = new_territory

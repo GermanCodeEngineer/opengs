@@ -6,6 +6,7 @@ var selected_province: Province
 func _ready() -> void:
 	DataImporter.new(db)
 	$Map.create_map_modes(db)
+	$Map.create_country_labels(db)
 
 
 func _on_player_province_selected(mouse_pos: Vector2) -> void:

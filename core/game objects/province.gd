@@ -8,7 +8,13 @@ var id: String
 var color: Color
 var type: Type
 var center: Vector2
-var territory: Territory
+var territory: Territory:
+	set(value):
+		if territory != null:
+			territory.provinces.erase(self)
+		territory = value
+		territory.provinces.append(self)
+		
 var province_owner: Country:
 	set(value):
 		if province_owner != null:
