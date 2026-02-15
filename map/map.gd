@@ -46,8 +46,9 @@ func create_country_labels(db: Database) -> void:
 		country_label.update_data(country)
 		
 func update_country_label(country: Country) -> void:
-	var label: CountryLabel = %CountryLabels.get_node(country.tag)
-	label.update_data(country)
+	if country != null:
+		var label: CountryLabel = %CountryLabels.get_node(country.tag)
+		label.update_data(country)
 	
 func update_map() -> void:
 	map_material_2d.set_shader_parameter("color_map_image", current_map_mode)
