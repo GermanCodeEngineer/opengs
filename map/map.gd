@@ -7,6 +7,7 @@ var country_label_scene: PackedScene = preload("res://map/country_label.tscn")
 
 
 var lut: LookupTexture
+var bt: ProvinceBorderTexture
 var mm_political: MapMode
 var mm_ideology: MapMode
 var current_map_mode: MapMode
@@ -17,6 +18,7 @@ var all_map_modes: Array[MapMode]
 
 func _ready() -> void:
 	create_lookup_texture()
+	create_province_border_texture()
 
 
 func get_pixel_color(mouse_pos: Vector2) -> Color:
@@ -28,6 +30,11 @@ func create_lookup_texture() -> void:
 	lut = LookupTexture.new(province_image)
 	map_material_2d.set_shader_parameter("lookup_image", lut)
 	lut.get_image().save_png("res://map/map_data/lut_preview.png")
+	
+func create_province_border_texture() -> void:
+	bt = ProvinceBorderTexture.new(province_image)
+	map_material_2d.set_shader_parameter("province_border_image", bt)
+	bt.get_image().save_png("res://map/map_data/bt_preview.png")
 
 func create_map_modes(db: Database) -> void:
 	mm_political = MapMode.new(lut.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)

@@ -13,10 +13,12 @@ func import_definition(db: Database) -> void:
 
 
 func import_history(db: Database) -> void:
-	var folder = "res://data/history/territories/"
+	var all_data = read_json("res://data/history/territories/territories.json")
 
 	for tid in db.id_to_territory.keys():
-		var data = read_json(folder + tid + ".json")
+		if not all_data.has(tid):
+			continue
+		var data: Dictionary = all_data[tid]
 		if not data.has("provinces"):
 			continue
 

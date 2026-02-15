@@ -2,6 +2,7 @@ shader_type canvas_item;
 
 uniform sampler2D lookup_image: source_color, filter_nearest;
 uniform sampler2D color_map_image: source_color, filter_nearest;
+uniform sampler2D province_border_image: source_color, filter_nearest;
 
 void fragment() {
 	// Variables
@@ -14,6 +15,7 @@ void fragment() {
 
 	// Textures
 	vec3 lookup_texture = texture(lookup_image, UV).rgb;
+	vec3 province_border_texture = texture(province_border_image, UV).rgb;
 
 	// Scale Y coordinate: lookup encodes 256 rows, but color map may be taller
 	float y_scale = 256.0 / float(textureSize(color_map_image, 0).y);
@@ -27,8 +29,47 @@ void fragment() {
 	// Set checkers
 	vec4 final_color = mix(map_mode_primary,map_mode_secondary,float(checkers_pattern));
 
-	// Show selected provinces
-	final_color = mix(final_color, selected_color, step(0.5, float(selected_color.rgb != vec3(0.0))));
-	
+	// Darken province borders
+	float is_border = 1.0 - province_border_texture.r;
+	final_color.rgb = mix(final_color.rgb, final_color.rgb * 0.9, is_border);
+
+	// Selection edge highlighting (green = province border, white = territory border)
+	// if (length(selected_color.rgb) > 0.01 && is_border > 0.01) {
+	if (length(selected_color.rgb) > 0.01) {
+		vec2 ps = 3.0 / vec2(texture_width, texture_height);
+		float hl_y = 2.0 * normalized_offset;
+		bool territory_edge = false;
+		bool province_edge = false;
+		bool is_province_hl = selected_color.r < 0.9;
+
+		vec3 nl; vec3 ns;
+
+		nl = texture(lookup_image, UV + vec2(ps.x, 0.0)).rgb;
+		ns = texture(color_map_image, vec2(nl.r, nl.g * y_scale) + vec2(0.0, hl_y)).rgb;
+		if (length(ns) < 0.01) territory_edge = true;
+		if (is_province_hl && distance(ns, selected_color.rgb) > 0.01) province_edge = true;
+
+		nl = texture(lookup_image, UV - vec2(ps.x, 0.0)).rgb;
+		ns = texture(color_map_image, vec2(nl.r, nl.g * y_scale) + vec2(0.0, hl_y)).rgb;
+		if (length(ns) < 0.01) territory_edge = true;
+		if (is_province_hl && distance(ns, selected_color.rgb) > 0.01) province_edge = true;
+
+		nl = texture(lookup_image, UV + vec2(0.0, ps.y)).rgb;
+		ns = texture(color_map_image, vec2(nl.r, nl.g * y_scale) + vec2(0.0, hl_y)).rgb;
+		if (length(ns) < 0.01) territory_edge = true;
+		if (is_province_hl && distance(ns, selected_color.rgb) > 0.01) province_edge = true;
+
+		nl = texture(lookup_image, UV - vec2(0.0, ps.y)).rgb;
+		ns = texture(color_map_image, vec2(nl.r, nl.g * y_scale) + vec2(0.0, hl_y)).rgb;
+		if (length(ns) < 0.01) territory_edge = true;
+		if (is_province_hl && distance(ns, selected_color.rgb) > 0.01) province_edge = true;
+
+		if (province_edge) {
+			final_color = selected_color;
+		} else if (territory_edge) {
+			final_color = vec4(1.0);
+		}
+	}
+
 	COLOR = final_color;
 }

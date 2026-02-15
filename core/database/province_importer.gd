@@ -18,15 +18,16 @@ func import_definition(db: Database) -> void:
 		db.color_to_province[province.color] = province
 
 func import_history(db: Database) -> void:
-	var folder = "res://data/history/provinces/"
+	var all_data = read_json("res://data/history/provinces/provinces.json")
 
 	for pid in db.id_to_province.keys():
 		var province: Province = db.id_to_province[pid]
-		var data = read_json(folder + pid + ".json")
 		if province.type == Province.Type.LAND:
 			province.province_owner = db.tag_to_country["NNN"]
 			province.province_controller = db.tag_to_country["NNN"]
-			if data.has("province_owner"):
-				province.province_owner = db.tag_to_country[data["province_owner"]]
-			if data.has("province_controller"):
-				province.province_controller = db.tag_to_country[data["province_controller"]]
+			if all_data.has(pid):
+				var data: Dictionary = all_data[pid]
+				if data.has("province_owner"):
+					province.province_owner = db.tag_to_country[data["province_owner"]]
+				if data.has("province_controller"):
+					province.province_controller = db.tag_to_country[data["province_controller"]]
