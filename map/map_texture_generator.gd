@@ -1,13 +1,29 @@
+
 class_name MapTextureGenerator
 
 var lookup_texture: ImageTexture
 var border_texture: ImageTexture
 var province_color_to_lookup: Dictionary[Color, Color]
-
+var cache_id
 
 func _init(province_image: Image) -> void:
-	_generate(province_image)
-
+	var hash_img_data = province_image.get_data()
+	self.cache_id = Marshalls.raw_to_base64(hash_img_data).md5_text() 
+	#check the existence of the map cache
+	if FileAccess.file_exists("user://map_cache/{id}/lookup_texture.png".format({"id":self.cache_id})) and FileAccess.file_exists("user://map_cache/{id}/border_texture.png".format({"id":self.cache_id})) and  FileAccess.file_exists("user:///map_cache/{id}/province_color_to_lookup.data".format({"id":self.cache_id})):
+		print("cache load map")	
+		var lut_image: Image = Image.load_from_file("user://map_cache/{id}/lookup_texture.png".format({"id":self.cache_id}))
+		lookup_texture = ImageTexture.create_from_image(lut_image)
+		var border_image: Image = Image.load_from_file("user://map_cache/{id}/border_texture.png".format({"id":self.cache_id}))
+		border_texture = ImageTexture.create_from_image(border_image)
+		var province_color_to_lookup_file = FileAccess.open("user://map_cache/{id}/province_color_to_lookup.data".format({"id":self.cache_id}), FileAccess.READ)
+		province_color_to_lookup = str_to_var(province_color_to_lookup_file.get_as_text())
+		province_color_to_lookup_file.close()
+		print("cache load map end")	
+	else:
+		print("generation map")	
+		_generate(province_image)
+		print("generation map end")	
 
 func _generate(province_image: Image) -> void:
 	var width: int = province_image.get_width()
@@ -78,9 +94,16 @@ func _generate(province_image: Image) -> void:
 				border_data[out_idx] = 255
 				border_data[out_idx + 1] = 255
 				border_data[out_idx + 2] = 255
-
+	var folder_path = "user://map_cache/{id}".format({"id": self.cache_id})
+	if not DirAccess.dir_exists_absolute(folder_path):
+		DirAccess.make_dir_recursive_absolute(folder_path)
 	var lut_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RGB8, lut_data)
 	lookup_texture = ImageTexture.create_from_image(lut_image)
-
+	lookup_texture.get_image().save_png("user://map_cache/{id}/lookup_texture.png".format({"id":self.cache_id})) #сache "Baked" image of map for fast loading
 	var border_image: Image = Image.create_from_data(width, height, false, Image.FORMAT_RGB8, border_data)
 	border_texture = ImageTexture.create_from_image(border_image)
+	border_texture.get_image().save_png("user://map_cache/{id}/border_texture.png".format({"id":self.cache_id})) #сache "Baked" image of map for fast loading
+	var province_color_to_lookup_file = FileAccess.open("user://map_cache/{id}/province_color_to_lookup.data".format({"id":self.cache_id}), FileAccess.WRITE)
+	if province_color_to_lookup_file:
+		province_color_to_lookup_file.store_string(var_to_str(province_color_to_lookup))
+		province_color_to_lookup_file.close()
