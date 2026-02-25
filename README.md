@@ -18,7 +18,7 @@ The project is covered by the MIT licence, and thus is free for anyone to use fo
 The creation is documented on the [YouTube Tutorial Series](https://www.youtube.com/playlist?list=PLz7HHPGLr7NLGJOin49X8VKNHoMHNfaKd)
 
 ## Discord 
-Follow and/or support the project on [OpenGS Discord Server](https://discord.gg/6apDaJrY)
+Follow and/or support the project on [OpenGS Discord Server](https://discord.gg/6pRc9f6g6S)
 
 
 ## Delivered and maintained by 
