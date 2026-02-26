@@ -1,7 +1,7 @@
 extends ImageTexture
 class_name MapMode
 
-enum Type {POLITICAL, IDEOLOGY}
+enum Type {POLITICAL, IDEOLOGY, PROVINCE}
 
 const PRIMARY_OFFSET = 0
 const SECONDARY_OFFSET = 150
@@ -42,6 +42,12 @@ func _create_color_map(province_color_to_lookup, color_to_province, type) -> Ima
 							_color_map.set_pixel(x, y + SECONDARY_OFFSET, Color(0.0, 0.0, 1.0, 1.0))
 						Country.Ideology.COMMUNISM:
 							_color_map.set_pixel(x, y + SECONDARY_OFFSET, Color(1.0, 0.0, 0.0, 1.0))
+				
+				Type.PROVINCE:
+					_color_map.set_pixel(x, y, province_color)
+					_color_map.set_pixel(x, y + SECONDARY_OFFSET, province_color)
+				
+					
 	return _color_map
 
 func update_color_map(input_color: Color, output_color: Color, offset: int) -> void:
