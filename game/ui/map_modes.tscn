@@ -28,5 +28,10 @@ text = "Political"
 layout_mode = 2
 text = "Ideology"
 
+[node name="ButtonProvince" type="Button" parent="PanelContainer/GridContainer" unique_id=710751532]
+layout_mode = 2
+text = "Province"
+
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonPolitical" to="." method="_on_button_political_button_up"]
 [connection signal="button_up" from="PanelContainer/GridContainer/ButtonIdeology" to="." method="_on_button_ideology_button_up"]
+[connection signal="button_up" from="PanelContainer/GridContainer/ButtonProvince" to="." method="_on_button_province_button_up"]
