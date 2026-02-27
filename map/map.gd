@@ -10,7 +10,8 @@ var tex_gen: MapTextureGenerator
 var mm_political: MapMode
 var mm_ideology: MapMode
 var mm_province: MapMode
-var current_map_mode: MapMode
+var mm_territory: MapMode
+var current_map_mode: MapModey
 var current_highlight: MapHighlight
 
 var all_map_modes: Array[MapMode]
@@ -36,7 +37,8 @@ func create_map_modes(db: Database) -> void:
 	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
 	mm_ideology = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.IDEOLOGY)
 	mm_province = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.PROVINCE)
-	all_map_modes = [mm_political, mm_ideology, mm_province]
+	mm_territory = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.TERRITORY)
+	all_map_modes = [mm_political, mm_ideology, mm_province, mm_territory]
 	set_map_mode(MapMode.Type.POLITICAL)
 	mm_political.get_image().save_png("res://map/map_data/cmap_preview.png")
 	
@@ -66,6 +68,8 @@ func set_map_mode(map_mode: MapMode.Type) -> void:
 			current_map_mode = mm_ideology
 		MapMode.Type.PROVINCE:
 			current_map_mode = mm_province
+		MapMode.Type.TERRITORY:
+			current_map_mode = mm_territory
 	if current_highlight != null:
 		current_map_mode = current_highlight.apply_highlights(current_map_mode)
 	update_map()

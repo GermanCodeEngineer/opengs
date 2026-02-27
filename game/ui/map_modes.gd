@@ -9,3 +9,6 @@ func _on_button_ideology_button_up() -> void:
 
 func _on_button_province_button_up() -> void:
 	map_mode_selected.emit(MapMode.Type.PROVINCE)
+
+func _on_button_territory_button_up() -> void:
+	map_mode_selected.emit(MapMode.Type.TERRITORY)
