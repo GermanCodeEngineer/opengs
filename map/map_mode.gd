@@ -24,6 +24,8 @@ func _create_color_map(province_color_to_lookup, color_to_province, type) -> Ima
 		var x = lookup.r * 255
 		var y = lookup.g * 255
 		var province: Province = color_to_province[province_color]
+		var territory: Territory = province.territory
+		var sibling_province = territory.provinces[0]
 		if province.type == Province.Type.LAND:
 			match type:
 				Type.POLITICAL:
@@ -48,8 +50,8 @@ func _create_color_map(province_color_to_lookup, color_to_province, type) -> Ima
 					_color_map.set_pixel(x, y + SECONDARY_OFFSET, province_color)
 				
 				Type.TERRITORY:
-					_color_map.set_pixel(x, y, province_color)
-					_color_map.set_pixel(x, y + SECONDARY_OFFSET, province_color)
+					_color_map.set_pixel(x, y, sibling_province.color)
+					_color_map.set_pixel(x, y + SECONDARY_OFFSET, sibling_province.color)
 				
 					
 	return _color_map

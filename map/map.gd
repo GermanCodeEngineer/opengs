@@ -11,7 +11,7 @@ var mm_political: MapMode
 var mm_ideology: MapMode
 var mm_province: MapMode
 var mm_territory: MapMode
-var current_map_mode: MapModey
+var current_map_mode: MapMode
 var current_highlight: MapHighlight
 
 var all_map_modes: Array[MapMode]
