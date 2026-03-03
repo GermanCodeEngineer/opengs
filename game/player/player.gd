@@ -24,7 +24,7 @@ var camera_rotation_direction:float = 0
 #Camera zoom
 var camera_zoom_direction:float = 0
 @export_range(0,1000,1) var camera_zoom_speed:float = 1000.0
-@export_range(0,100,1) var camera_zoom_min:float = 40.0
+@export_range(0,100,1) var camera_zoom_min:float = 0.0
 @export_range(0,1000,1) var camera_zoom_max:float = 1000.0
 @export_range(0,2,1) var camera_zoom_speed_damp:float = 0.92
 
@@ -54,7 +54,7 @@ func _process(delta:float) -> void:
 	camera_automatic_pan(delta)
 	camera_base_rotate(delta)
 	camera_rotate_to_mouse_offsets(delta)
-
+	
 
 #Moves the base of camera
 func camera_base_move(delta:float) -> void:
@@ -68,7 +68,8 @@ func camera_base_move(delta:float) -> void:
 	if Input.is_action_pressed("camera_left"): velocity_direction -= transform.basis.x
 	velocity_direction.x += camera_touchpad_move.x
 	velocity_direction.z += camera_touchpad_move.y
-	position += velocity_direction.normalized() * camera_move_speed  * delta
+	var zoom_factor = sqrt(max(camera.position.z, 0.0) + 0.01)
+	position += velocity_direction.normalized() * camera_move_speed * zoom_factor * delta
 
 
 func _unhandled_input(event: InputEvent) -> void:

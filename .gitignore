@@ -3,3 +3,5 @@
 /android/
 CLAUDE.md
 .claude/settings.local.json
+
+.vscode/
