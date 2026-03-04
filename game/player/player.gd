@@ -9,6 +9,9 @@ signal province_selected
 #Camera move
 var camera_touchpad_move:Vector2 = Vector2.ZERO
 @export_range(0,1000,1) var camera_move_speed:float = 500.0
+@export_range(0.01,1000,0.01) var camera_move_speed_reference_z:float = 100.0
+@export_range(0.01,10,0.01) var camera_move_speed_screen_scale_min:float = 0.01
+@export_range(0.01,1000000,0.01) var camera_move_speed_screen_scale_max:float = 1000000
 
 #Camera rotate
 var camera_rotation_direction:float = 0
@@ -68,8 +71,12 @@ func camera_base_move(delta:float) -> void:
 	if Input.is_action_pressed("camera_left"): velocity_direction -= transform.basis.x
 	velocity_direction.x += camera_touchpad_move.x
 	velocity_direction.z += camera_touchpad_move.y
-	var zoom_factor = sqrt(max(camera.position.z, 0.0) + 0.01)
-	position += velocity_direction.normalized() * camera_move_speed * zoom_factor * delta
+	if velocity_direction.is_zero_approx(): return
+
+	var distance_ratio:float = max(camera.position.z, 0.01) / max(camera_move_speed_reference_z, 0.01)
+	var speed_scale:float = clamp(distance_ratio, camera_move_speed_screen_scale_min, camera_move_speed_screen_scale_max)
+
+	position += velocity_direction.normalized() * camera_move_speed * speed_scale * delta
 
 
 func _unhandled_input(event: InputEvent) -> void:
