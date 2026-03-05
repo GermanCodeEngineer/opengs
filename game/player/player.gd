@@ -5,6 +5,7 @@ signal province_selected
 #Nodes
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
+@onready var label_camera_position: Label = get_node_or_null("../ProvinceSelected/PanelContainer/GridContainer/LabelCameraPosition")
 
 ##Camera move
 #var camera_touchpad_move:Vector2 = Vector2.ZERO
@@ -33,10 +34,11 @@ signal province_selected
 #@export_range(0,2,0.01) var camera_zoom_speed_damp:float = 0.80
 
 # Camera Movement
-var camera_acceleration_speed_xy = 500.0
-var camera_acceleration_speed_z = 500.0
+var camera_acceleration_speed_xy = 100.0
+var camera_acceleration_speed_z = 100.0
 var camera_pan_rel_acc_speed = 1.0
 var camera_touchpad_rel_acc_speed = 1.0
+var camera_magnify_rel_acc_speed = 1.0
 
 var camera_acceleration_speed_damp_xy = 0.80
 var camera_acceleration_speed_damp_z = camera_acceleration_speed_damp_xy
@@ -44,9 +46,9 @@ var camera_acceleration_speed_damp_z = camera_acceleration_speed_damp_xy
 var camera_velocity = Vector3.ZERO
 var frame_acceleration = Vector3.ZERO # Auto merged into velocity
 
-var camera_move_min = 0.0
-var camera_move_max = INF
-
+# Bounds
+var camera_minimum: Vector3 = Vector3(-500, -300, 10)
+var camera_maximum: Vector3 = Vector3(500, 350, 1000)
 
 
 # Flags
@@ -71,6 +73,10 @@ func _ready() -> void:
 func _process(delta:float) -> void:
 	if !camera_can_process: return
 	camera_base_move(delta)
+	if label_camera_position:
+		label_camera_position.text = str(camera.position)
+	
+	#print("Camera position:", camera.position, "|", "Global position:", camera.global_position)
 	# Temporarily disable stuff
 	# camera_automatic_pan(delta)  # Disabled
 	# camera_base_rotate(delta)
@@ -96,9 +102,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action("camera_zoom_out"):
 		print("[DEBUG] Zoom Out Event")
 		frame_acceleration += Vector3(0, 0, camera_touchpad_rel_acc_speed)
-	if event is InputEventMagnifyGesture:
+	if event is InputEventMagnifyGesture: # TODO: test
 		print("[DEBUG] MagnifyGesture: ", event.factor)
-		frame_acceleration += Vector3(0, 0, camera_touchpad_rel_acc_speed * (1 - event.factor))
+		frame_acceleration += Vector3(0, 0, camera_magnify_rel_acc_speed * (1 - event.factor))
 	
 	
 	## Camera rotations
@@ -150,6 +156,8 @@ func camera_base_move(delta:float) -> void:
 	camera_velocity.x *= camera_acceleration_speed_damp_xy
 	camera_velocity.y *= camera_acceleration_speed_damp_xy
 	camera_velocity.z *= camera_acceleration_speed_damp_z
+
+	camera.position = camera.position.clamp(camera_minimum, camera_maximum)
 
 	#var distance_ratio:float = max(camera.position.z, 0.01) / max(camera_move_speed_reference_z, 0.01)
 	#var speed_scale:float = clamp(distance_ratio, camera_move_speed_screen_scale_min, camera_move_speed_screen_scale_max)
