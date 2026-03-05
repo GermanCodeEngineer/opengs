@@ -34,7 +34,7 @@ signal province_selected
 #@export_range(0,2,0.01) var camera_zoom_speed_damp:float = 0.80
 
 # Camera Movement
-var camera_acceleration_speed_xy = 100.0
+var camera_acceleration_speed_xy_rel_to_z = 1.0
 var camera_acceleration_speed_z = 100.0
 var camera_pan_rel_acc_speed = 1.0
 var camera_touchpad_rel_acc_speed = 1.0
@@ -47,8 +47,8 @@ var camera_velocity = Vector3.ZERO
 var frame_acceleration = Vector3.ZERO # Auto merged into velocity
 
 # Bounds
-var camera_minimum: Vector3 = Vector3(-500, -300, 10)
-var camera_maximum: Vector3 = Vector3(500, 350, 1000)
+var camera_minimum: Vector3 = Vector3(-460.0, -303.0, 10.0)
+var camera_maximum: Vector3 = Vector3(460.0, 267.0, 1000.0)
 
 
 # Flags
@@ -69,12 +69,28 @@ var mouse_last_position:Vector2 = Vector2.ZERO
 func _ready() -> void:
 	pass
 
+# Generate and Cache Socket Rotation Adjustment Matrix
+var __cache_rot_matrix = null
+func _get_socket_rotation_matrix() -> Basis:
+	if !__cache_rot_matrix:
+		var socket_rotation = Vector3(
+			- (camera_socket.rotation_degrees.x + 90),
+			camera_socket.rotation_degrees.y,
+			camera_socket.rotation_degrees.z,
+		)
+		# Create a Basis (rotation matrix)
+		__cache_rot_matrix = Basis.from_euler(socket_rotation * deg_to_rad(1.0))
+	return __cache_rot_matrix
+
+func _round_vec(v: Vector3) -> Vector3:
+	return Vector3(round(100 * v.x) / 100, round(100 * v.y) / 100, round(100 * v.z) / 100)
+
 # Run each frame	
 func _process(delta:float) -> void:
 	if !camera_can_process: return
 	camera_base_move(delta)
 	if label_camera_position:
-		label_camera_position.text = str(camera.position)
+		label_camera_position.text = str(_round_vec(camera.position)) + " L|G " + str(_round_vec(camera.global_position))
 	
 	#print("Camera position:", camera.position, "|", "Global position:", camera.global_position)
 	# Temporarily disable stuff
@@ -141,23 +157,53 @@ func camera_base_move(delta:float) -> void:
 	if Input.is_action_pressed("camera_left"):
 		frame_acceleration -= transform.basis.x
 
+	# Rotate acceleration (Camera is slightly tilted)
+	var socket_basis = _get_socket_rotation_matrix()
+	print("Base", socket_basis)
+	var result = socket_basis * frame_acceleration # Commented out for manual calculation
+	print("Result", result, "from", frame_acceleration)
+	frame_acceleration = result
+	
 	# Scale acceleration by speed and delta
-	frame_acceleration.x *= camera_acceleration_speed_xy
-	frame_acceleration.y *= camera_acceleration_speed_xy
+	# Use camera position in socket local space for z scaling
+	var socket_basis_inv = socket_basis.inverse()
+	var camera_pos_local = socket_basis_inv * camera.position
+	print("Local cam", camera_pos_local)
+	var local_z = max(camera_pos_local.z, 0)
+	frame_acceleration.x *= camera_acceleration_speed_xy_rel_to_z * local_z
+	frame_acceleration.y *= camera_acceleration_speed_xy_rel_to_z * local_z
 	frame_acceleration.z *= camera_acceleration_speed_z
+	print("Acc after speed", frame_acceleration)
 	frame_acceleration *= delta
 
 	# Apply acceleration to velocity
 	camera_velocity += frame_acceleration
 	frame_acceleration = Vector3.ZERO
 
-	# Apply velocity to position and dampen
+	# Apply velocity to position with swept bounds check
+	# => AABB-Algorythm
+	var min_percent = 1.0
+	for axis in ["x", "y", "z"]:
+		var pos = camera.position[axis]
+		var min_bound = camera_minimum[axis]
+		var max_bound = camera_maximum[axis]
+		var axis_velocity = camera_velocity[axis]
+		if axis_velocity < 0.0:
+			if (pos + axis_velocity) < min_bound:
+				var percent = (min_bound - pos) / axis_velocity if axis_velocity != 0 else 0.0
+				min_percent = min(min_percent, percent)
+		elif axis_velocity > 0.0:
+			if (pos + axis_velocity) > max_bound:
+				var percent = (max_bound - pos) / axis_velocity if axis_velocity != 0 else 0.0
+				min_percent = min(min_percent, percent)
+	# Only move as far as all axes allow
+	camera_velocity *= min_percent
 	camera.position += camera_velocity
+
+	# Dampen velocity before next frame
 	camera_velocity.x *= camera_acceleration_speed_damp_xy
 	camera_velocity.y *= camera_acceleration_speed_damp_xy
 	camera_velocity.z *= camera_acceleration_speed_damp_z
-
-	camera.position = camera.position.clamp(camera_minimum, camera_maximum)
 
 	#var distance_ratio:float = max(camera.position.z, 0.01) / max(camera_move_speed_reference_z, 0.01)
 	#var speed_scale:float = clamp(distance_ratio, camera_move_speed_screen_scale_min, camera_move_speed_screen_scale_max)
