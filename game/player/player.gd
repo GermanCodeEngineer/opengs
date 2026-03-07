@@ -2,10 +2,13 @@ extends Node3D
 
 signal province_selected
 
-#Nodes
+# Nodes
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
 @onready var label_camera_position: Label = get_node_or_null("../ProvinceSelected/PanelContainer/GridContainer/LabelCameraPosition")
+
+# Constants
+var NLOG2 = - log(2)
 
 ##Camera move
 #var camera_touchpad_move:Vector2 = Vector2.ZERO
@@ -16,11 +19,11 @@ signal province_selected
 #@export_range(0,2,0.01) var camera_move_speed_damp:float = 0.80
 #
 ##Camera rotate
-#var camera_rotation_direction:float = 0
-#@export_range(0,10,0.1) var camera_rotation_speed:float = 0.20
-#@export_range(0,20,1) var camera_base_rotation_speed:float = 6
-#@export_range(0,10,1) var camera_socket_rotation_x_min:float = -1.60
-#@export_range(0,10,1) var camera_socket_rotation_x_max:float = -0.20
+var camera_rotation_direction:float = 0
+@export_range(0,10,0.1) var camera_rotation_speed:float = 0.20
+@export_range(0,20,1) var camera_base_rotation_speed:float = 6
+@export_range(0,10,1) var camera_socket_rotation_x_min:float = -1.60
+@export_range(0,10,1) var camera_socket_rotation_x_max:float = -0.20
 #
 ##Camera pan
 #@export_range(0,32,4) var camera_automatic_pan_margin:int = 16
@@ -33,18 +36,25 @@ signal province_selected
 #@export_range(0,1000,1) var camera_zoom_max:float = 1000.0
 #@export_range(0,2,0.01) var camera_zoom_speed_damp:float = 0.80
 
-# Camera Movement
+# Camera Movement # TODO: fine tune variables
 var camera_acceleration_speed_xy_rel_to_z = 1.0
 var camera_acceleration_speed_z = 100.0
 var camera_pan_rel_acc_speed = 1.0
 var camera_touchpad_rel_acc_speed = 1.0
 var camera_magnify_rel_acc_speed = 1.0
 
-var camera_acceleration_speed_damp_xy = 0.80
-var camera_acceleration_speed_damp_z = camera_acceleration_speed_damp_xy
+var camera_velocity_half_life_xy = 0.10
+var camera_velocity_half_life_z = camera_velocity_half_life_xy
 
+# Camera Rotation # TODO: fine tune variables
+var camera_rotation_acceleration_speed = 10.0
+var camera_velocity_half_life_rotation = camera_velocity_half_life_xy
+
+# Camera State
 var camera_velocity = Vector3.ZERO
 var frame_acceleration = Vector3.ZERO # Auto merged into velocity
+var camera_rotation_velocity = Vector2.ZERO
+var frame_rotation_acceleration = Vector2.ZERO # Auto merged into rotation velocity
 
 # Bounds
 var camera_minimum: Vector3 = Vector3(-460.0, -303.0, 10.0)
@@ -59,7 +69,7 @@ var camera_can_rotate_base:bool = false
 var camera_can_rotate_socket_x:bool = false
 var camera_can_rotate_by_mouse_offfset:bool = false
 
-# Internal Flags
+## Internal Flags
 var camera_is_rotating_base:bool = false
 var camera_is_rotating_mouse:bool = false
 var mouse_last_position:Vector2 = Vector2.ZERO
@@ -69,18 +79,6 @@ var mouse_last_position:Vector2 = Vector2.ZERO
 func _ready() -> void:
 	pass
 
-# Generate and Cache Socket Rotation Adjustment Matrix
-var __cache_rot_matrix = null
-func _get_socket_rotation_matrix() -> Basis:
-	if !__cache_rot_matrix:
-		var socket_rotation = Vector3(
-			- (camera_socket.rotation_degrees.x + 90),
-			camera_socket.rotation_degrees.y,
-			camera_socket.rotation_degrees.z,
-		)
-		# Create a Basis (rotation matrix)
-		__cache_rot_matrix = Basis.from_euler(socket_rotation * deg_to_rad(1.0))
-	return __cache_rot_matrix
 
 func _round_vec(v: Vector3) -> Vector3:
 	return Vector3(round(100 * v.x) / 100, round(100 * v.y) / 100, round(100 * v.z) / 100)
@@ -94,8 +92,8 @@ func _process(delta:float) -> void:
 	
 	#print("Camera position:", camera.position, "|", "Global position:", camera.global_position)
 	# Temporarily disable stuff
-	# camera_automatic_pan(delta)  # Disabled
-	# camera_base_rotate(delta)
+	# camera_automatic_pan(delta)
+	camera_base_rotate(delta)
 	# camera_rotate_to_mouse_offsets(delta)
 	
 
@@ -124,15 +122,23 @@ func _unhandled_input(event: InputEvent) -> void:
 	
 	
 	## Camera rotations
+	
 	#if event.is_action_pressed("camera_rotate_right"):
-	#	camera_rotation_direction = -1
-	#	camera_is_rotating_base = true
+	#	frame_rotation_acceleration += Vector2(-1, 0) # scaled later
 	#elif event.is_action_pressed("camera_rotate_left"):
-	#	camera_rotation_direction = 1
-	#	camera_is_rotating_base = true
-	#elif event.is_action_released("camera_rotate_left") or event.is_action_released("camera_rotate_right"):
-	#	camera_is_rotating_base = false
-	#	
+	#	frame_rotation_acceleration += Vector2(1, 0) # scaled later
+	if event.is_action_pressed("camera_rotate_right"):
+		camera_rotation_direction = -1
+		camera_is_rotating_base = true
+		print("[DEBUG] Rotate Right Event")
+	elif event.is_action_pressed("camera_rotate_left"):
+		camera_rotation_direction = 1
+		camera_is_rotating_base = true
+		print("[DEBUG] Rotate Left Event")
+	elif event.is_action_released("camera_rotate_left") or event.is_action_released("camera_rotate_right"):
+		camera_is_rotating_base = false
+		print("[DEBUG] Rotate Stop Event")
+		
 	#if event.is_action_pressed("camera_rotate"):
 	#	mouse_last_position = get_viewport().get_mouse_position()
 	#	camera_is_rotating_mouse = true
@@ -147,71 +153,46 @@ func _unhandled_input(event: InputEvent) -> void:
 func camera_base_move(delta:float) -> void:
 	if !camera_can_move_base: return
 	
-	# Calculate acceleration
+	# Calculate acceleration (move independent of camera rotation)
 	if Input.is_action_pressed("camera_forward"):
-		frame_acceleration += transform.basis.y
+		frame_acceleration += Vector3.UP
 	if Input.is_action_pressed("camera_backward"):
-		frame_acceleration -= transform.basis.y
+		frame_acceleration -= Vector3.UP
 	if Input.is_action_pressed("camera_right"):
-		frame_acceleration += transform.basis.x
+		frame_acceleration += Vector3.RIGHT
 	if Input.is_action_pressed("camera_left"):
-		frame_acceleration -= transform.basis.x
-
-	# Rotate acceleration (Camera is slightly tilted)
-	var socket_basis = _get_socket_rotation_matrix()
-	print("Base", socket_basis)
-	var result = socket_basis * frame_acceleration # Commented out for manual calculation
-	print("Result", result, "from", frame_acceleration)
-	frame_acceleration = result
+		frame_acceleration -= Vector3.RIGHT
 	
 	# Scale acceleration by speed and delta
-	# Use camera position in socket local space for z scaling
-	var socket_basis_inv = socket_basis.inverse()
-	var camera_pos_local = socket_basis_inv * camera.position
-	print("Local cam", camera_pos_local)
-	var local_z = max(camera_pos_local.z, 0)
-	frame_acceleration.x *= camera_acceleration_speed_xy_rel_to_z * local_z
-	frame_acceleration.y *= camera_acceleration_speed_xy_rel_to_z * local_z
+	# Move faster when camera is further away from map
+	var z_multiplier = max(camera.position.z, camera_minimum.z)
+	frame_acceleration.x *= camera_acceleration_speed_xy_rel_to_z * z_multiplier
+	frame_acceleration.y *= camera_acceleration_speed_xy_rel_to_z * z_multiplier
 	frame_acceleration.z *= camera_acceleration_speed_z
-	print("Acc after speed", frame_acceleration)
 	frame_acceleration *= delta
 
 	# Apply acceleration to velocity
 	camera_velocity += frame_acceleration
 	frame_acceleration = Vector3.ZERO
 
-	# Apply velocity to position with swept bounds check
-	# => AABB-Algorythm
-	var min_percent = 1.0
-	for axis in ["x", "y", "z"]:
-		var pos = camera.position[axis]
-		var min_bound = camera_minimum[axis]
-		var max_bound = camera_maximum[axis]
-		var axis_velocity = camera_velocity[axis]
-		if axis_velocity < 0.0:
-			if (pos + axis_velocity) < min_bound:
-				var percent = (min_bound - pos) / axis_velocity if axis_velocity != 0 else 0.0
-				min_percent = min(min_percent, percent)
-		elif axis_velocity > 0.0:
-			if (pos + axis_velocity) > max_bound:
-				var percent = (max_bound - pos) / axis_velocity if axis_velocity != 0 else 0.0
-				min_percent = min(min_percent, percent)
-	# Only move as far as all axes allow
-	camera_velocity *= min_percent
+	# Apply velocity to camera position and clamp
 	camera.position += camera_velocity
-
-	# Dampen velocity before next frame
-	camera_velocity.x *= camera_acceleration_speed_damp_xy
-	camera_velocity.y *= camera_acceleration_speed_damp_xy
-	camera_velocity.z *= camera_acceleration_speed_damp_z
-
-	#var distance_ratio:float = max(camera.position.z, 0.01) / max(camera_move_speed_reference_z, 0.01)
-	#var speed_scale:float = clamp(distance_ratio, camera_move_speed_screen_scale_min, camera_move_speed_screen_scale_max)
-	#position += camera_velocity.normalized() * camera_move_speed_xy * speed_scale * delta
-
-	#var new_zoom:float = clamp(camera.position.z + camera_zoom_speed * camera_zoom_direction * delta, camera_zoom_min, camera_zoom_max)
-	#camera.position.z = new_zoom
-	#camera_zoom_direction *= camera_zoom_speed_damp
+	var new_position = camera.position.clamp(camera_minimum, camera_maximum)
+	# Stop movement if we hit a boundary
+	if new_position.x != camera.position.x:
+		camera_velocity.x = 0
+	if new_position.y != camera.position.y:
+		camera_velocity.y = 0
+	if new_position.z != camera.position.z:
+		camera_velocity.z = 0
+	camera.position = new_position
+	
+	# Dampen velocity before next frame	var safe_half_life_xy = max(camera_velocity_half_life_xy, 0.0001)
+	var damp_xy = exp(NLOG2 * delta / camera_velocity_half_life_xy)
+	var damp_z  = exp(NLOG2 * delta / camera_velocity_half_life_z)
+	camera_velocity.x *= damp_xy
+	camera_velocity.y *= damp_xy
+	camera_velocity.z *= damp_z
 
 
 ## Rotate the camera socket based on mouse offset
@@ -225,29 +206,29 @@ func camera_base_move(delta:float) -> void:
 #	
 #	#camera_base_rotate_left_right(delta,mouse_offset.x) #Remove comment to get y rotation on mouse
 #	camera_socket_rotate_x(delta,mouse_offset.y)
-#	
-#	
-## Rotates the camera base
-#func camera_base_rotate(delta:float) -> void:
-#	if !camera_can_rotate_base or !camera_is_rotating_base : return
-#	
-#	#To rotate
-#	camera_base_rotate_left_right(delta, camera_rotation_direction * camera_base_rotation_speed)
-#
+	
+	
+# Rotates the camera base
+func camera_base_rotate(delta:float) -> void:
+	if !camera_can_rotate_base or !camera_is_rotating_base : return
+	
+	#To rotate
+	camera_base_rotate_left_right(delta, camera_rotation_direction * camera_base_rotation_speed)
+
 ## Rotates the socket of the camera
 #func camera_socket_rotate_x(delta:float, dir:float) -> void:
 #	if !camera_can_rotate_socket_x  : return
 #	
-#	var new_rotation_x:float = camera_socket.rotation.x
+#	var new_rotation_x:float = <!question>camera_socket.rotation.x
 #	new_rotation_x -= dir * delta * camera_rotation_speed
 #	
 #	new_rotation_x = clamp(new_rotation_x,camera_socket_rotation_x_min,camera_socket_rotation_x_max)
-#	camera_socket.rotation.x = new_rotation_x
-#	
-## Rotates the camera speed left or right
-#func camera_base_rotate_left_right(delta:float, dir:float) -> void:
-#	rotation.y += dir * camera_rotation_speed * delta
-#	
+#	<!question>camera_socket.rotation.x = new_rotation_x
+	
+# Rotates the camera speed left or right
+func camera_base_rotate_left_right(delta:float, dir:float) -> void:
+	rotation.y += dir * camera_rotation_speed * delta
+	
 ## Pans the camera automatically based on screen margins
 #func camera_automatic_pan(delta:float) -> void:
 #	if !camera_can_automatic_pan: return
