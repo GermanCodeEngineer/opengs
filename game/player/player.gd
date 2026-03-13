@@ -1,51 +1,63 @@
 extends Node3D
 signal province_selected
 
-# Imports
-
 # Nodes
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
 
 # Control variables # TODO: fine tune
 # Camera Movement
-var camera_move := ControlVariables.new(
+class MovementCalculator extends PVACalculator:
+	pass
+
+var camera_move := MovementCalculator.new(
 	Vector3(50.0, 50.0, 50.0), # acceleration_speed_factor
 	0.15, # velocity_half_life
-	Vector3.ZERO, # velocity
-	Vector3.ZERO, # frame_acceleration
+	Vector3(-INF, -INF, -INF), # min_bound # TODO: calculate bounds?
+	Vector3(INF, INF, INF), # max_bound
+	Vector3.ZERO, # start_velocity
+	Vector3.ZERO, # start_frame_acceleration
 )
 var camera_touchpad_move:Vector2 = Vector2.ZERO
 
 # Camera Rotation to Mouse Offsets on X and Y
-var camera_rotate_mouse := ControlVariables.new(
+class MouseRotationCalculator extends PVACalculator:
+	pass
+
+var camera_rotate_mouse := MouseRotationCalculator.new(
 	Vector2(0.2, 0.2), # acceleration_speed_factor
 	0.00, # velocity_half_life (velocity immediately reset)
-	Vector2.ZERO, # velocity
-	Vector2.ZERO, # frame_acceleration
 	Vector2(deg_to_rad(-90), -INF), # min_bound
 	Vector2(deg_to_rad(-15), INF), # max_bound
+	Vector2.ZERO, # start_velocity
+	Vector2.ZERO, # start_frame_acceleration
 )
 
 
 # Camera Rotation to Keys on X and Y
-var camera_rotate_keys := ControlVariables.new(
+class KeysRotationCalculator extends PVACalculator:
+	pass
+
+var camera_rotate_keys := KeysRotationCalculator.new(
 	Vector2(1.2, 1.2), # acceleration_speed_factor
 	0.15, # velocity_half_life
-	Vector2.ZERO, # velocity
-	Vector2.ZERO, # frame_acceleration
 	Vector2(deg_to_rad(-90), -INF), # min_bound
 	Vector2(deg_to_rad(-15), INF), # max_bound
+	Vector2.ZERO, # start_velocity
+	Vector2.ZERO, # start_frame_acceleration
 )
 
 # Camera Zooming
-var camera_zoom := ControlVariables.new(
+class ZoomCalculator extends PVACalculator:
+	pass
+
+var camera_zoom := ZoomCalculator.new(
 	300.0, # acceleration_speed_factor
 	0.15, # velocity_half_life
-	0.0, # velocity
-	0.0, # frame_acceleration
 	10.0, # min_bound
 	1000.0, # max_bound
+	0.0, # start_velocity
+	0.0, # start_frame_acceleration
 )
 
 # Camera Panning
@@ -78,7 +90,6 @@ func _process(delta:float) -> void:
 	camera_rotate_to_keys(delta)
 	camera_rotate_to_mouse_offsets(delta)
 	_show_fps()
-	print("Camera Pos: ", camera.position, " Global Pos: ", camera.global_position)
 
 # Show FPS on the window
 func _show_fps():
@@ -139,7 +150,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif  event.is_action_pressed("camera_zoom_out"):
 		camera_zoom.frame_acceleration += 1
 	if event is InputEventMagnifyGesture: # TODO: test if possible (touchpad does not register as this)
-		print("magnify ", event, " ", event.factor)
 		camera_zoom.frame_acceleration += (1-event.factor)
 	
 	# Camera Rotation

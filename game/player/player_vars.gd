@@ -78,7 +78,6 @@ func _process(delta:float) -> void:
 	camera_rotate_to_keys(delta)
 	camera_rotate_to_mouse_offsets(delta)
 	_show_fps()
-	print("Camera Pos: ", camera.position, " Global Pos: ", camera.global_position)
 
 # Show FPS on the window
 func _show_fps():
@@ -139,7 +138,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif  event.is_action_pressed("camera_zoom_out"):
 		camera_zoom.frame_acceleration += 1
 	if event is InputEventMagnifyGesture: # TODO: test if possible (touchpad does not register as this)
-		print("magnify ", event, " ", event.factor)
 		camera_zoom.frame_acceleration += (1-event.factor)
 	
 	# Camera Rotation
