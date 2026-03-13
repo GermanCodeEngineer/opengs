@@ -9,10 +9,14 @@ var velocity_half_life: Variant
 # Changing
 var velocity: Variant
 var frame_acceleration: Variant # Auto merged into velocity, reset each frame
+var min_bound: Variant
+var max_bound: Variant
 
-func _init(_acceleration_speed_factor, _velocity_half_life, _velocity, _frame_acceleration):
+func _init(_acceleration_speed_factor, _velocity_half_life, _velocity, _frame_acceleration, _min_bound = null, _max_bound = null):
 	acceleration_speed_factor = _acceleration_speed_factor
 	velocity_half_life = _velocity_half_life
 	velocity = _velocity
 	frame_acceleration = _frame_acceleration
+	min_bound = _min_bound
+	max_bound = _max_bound
 
