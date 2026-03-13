@@ -23,16 +23,19 @@ var camera_rotate_mouse := ControlVariables.new(
 	0.00, # velocity_half_life (velocity immediately reset)
 	Vector2.ZERO, # velocity
 	Vector2.ZERO, # frame_acceleration
-	Vector2(-1.60, -INF), # min_bound
-	Vector2(-0.20, INF), # max_bound
+	Vector2(deg_to_rad(-90), -INF), # min_bound
+	Vector2(deg_to_rad(-15), INF), # max_bound
 )
 
-# Camera Rotation to Keys on Y
-var camera_rotate_y_keys := ControlVariables.new(
-	1.5, # acceleration_speed_factor
+
+# Camera Rotation to Keys on X and Y
+var camera_rotate_keys := ControlVariables.new(
+	Vector2(1.2, 1.2), # acceleration_speed_factor
 	0.15, # velocity_half_life
-	0.0, # velocity
-	0.0, # frame_acceleration
+	Vector2.ZERO, # velocity
+	Vector2.ZERO, # frame_acceleration
+	Vector2(deg_to_rad(-90), -INF), # min_bound
+	Vector2(deg_to_rad(-15), INF), # max_bound
 )
 
 # Camera Zooming
@@ -41,7 +44,7 @@ var camera_zoom := ControlVariables.new(
 	0.15, # velocity_half_life
 	0.0, # velocity
 	0.0, # frame_acceleration
-	10.0, # min_bound # TODO: allow closer zoom
+	10.0, # min_bound
 	1000.0, # max_bound
 )
 
@@ -75,21 +78,23 @@ func _process(delta:float) -> void:
 	camera_rotate_to_keys(delta)
 	camera_rotate_to_mouse_offsets(delta)
 	_show_fps()
+	print("Camera Pos: ", camera.position, " Global Pos: ", camera.global_position)
 
 # Show FPS on the window
 func _show_fps():
 	var fps = Engine.get_frames_per_second()
+	var label_text = "FPS: %d  Rot: (X: %.1fr, Y: %.1fr)" % [fps, camera_socket.rotation.x, rotation.y]
 	if not has_node("FPSLabel"):
 		var label = Label.new()
 		label.name = "FPSLabel"
-		label.text = "FPS: %d" % fps
+		label.text = label_text
 		label.set_position(Vector2(10, 10))
 		label.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		label.add_theme_color_override("font_color", Color(1,1,0))
 		add_child(label)
 	else:
 		var label = get_node("FPSLabel")
-		label.text = "FPS: %d" % fps
+		label.text = label_text
 
 
 # Moves the base of camera
@@ -188,17 +193,25 @@ func camera_rotate_to_keys(delta:float) -> void:
 
 	# Process Inputs
 	if Input.is_action_pressed("camera_rotate_right"):
-		camera_rotate_y_keys.frame_acceleration -= 1
+		camera_rotate_keys.frame_acceleration += Vector2(0, -1)
 	elif Input.is_action_pressed("camera_rotate_left"):
-		camera_rotate_y_keys.frame_acceleration += 1
+		camera_rotate_keys.frame_acceleration += Vector2(0, 1)
+	if Input.is_action_pressed("camera_rotate_up"):
+		camera_rotate_keys.frame_acceleration += Vector2(-1, 0)
+	elif Input.is_action_pressed("camera_rotate_down"):
+		camera_rotate_keys.frame_acceleration += Vector2(1, 0)
 	
 	# Add acceleration to velocity and reset
-	camera_rotate_y_keys.velocity += camera_rotate_y_keys.frame_acceleration * camera_rotate_y_keys.acceleration_speed_factor
-	camera_rotate_y_keys.frame_acceleration = 0.0
+	camera_rotate_keys.velocity += camera_rotate_keys.frame_acceleration * camera_rotate_keys.acceleration_speed_factor
+	camera_rotate_keys.frame_acceleration = Vector2.ZERO
 	
 	# Apply velocity and dampen
-	rotation.y += camera_rotate_y_keys.velocity * delta
-	camera_rotate_y_keys.velocity *= _dampen_with_half_life(camera_rotate_y_keys.velocity_half_life, delta)
+	var rot := Vector2(camera_socket.rotation.x, rotation.y)
+	rot -= camera_rotate_keys.velocity * delta
+	rot = rot.clamp(camera_rotate_keys.min_bound, camera_rotate_keys.max_bound)
+	camera_socket.rotation.x = rot.x
+	rotation.y = rot.y
+	camera_rotate_keys.velocity *= _dampen_with_half_life(camera_rotate_keys.velocity_half_life, delta)
 	
 	
 # Pans the camera automatically based on screen margins
