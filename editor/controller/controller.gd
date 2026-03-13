@@ -62,10 +62,10 @@ func camera_base_move(delta:float) -> void:
 	var velocity_direction: Vector3 = Vector3.ZERO
 	
 	
-	if Input.is_action_pressed("camera_forward"): velocity_direction -= transform.basis.z
-	if Input.is_action_pressed("camera_backward"): velocity_direction += transform.basis.z
-	if Input.is_action_pressed("camera_right"): velocity_direction += transform.basis.x
-	if Input.is_action_pressed("camera_left"): velocity_direction -= transform.basis.x
+	if Input.is_action_pressed("camera_move_forward"): velocity_direction -= transform.basis.z
+	if Input.is_action_pressed("camera_move_backward"): velocity_direction += transform.basis.z
+	if Input.is_action_pressed("camera_move_right"): velocity_direction += transform.basis.x
+	if Input.is_action_pressed("camera_move_left"): velocity_direction -= transform.basis.x
 	velocity_direction.x += camera_touchpad_move.x
 	velocity_direction.z += camera_touchpad_move.y
 	position += velocity_direction.normalized() * camera_move_speed  * delta

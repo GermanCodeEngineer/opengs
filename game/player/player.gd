@@ -10,24 +10,25 @@ signal province_selected
 # Control variables # TODO: fine tune
 # Camera Movement
 var camera_move := ControlVariables.new(
-	50.0, # acceleration_speed_factor
+	Vector3(50.0, 50.0, 50.0), # acceleration_speed_factor
 	0.15, # velocity_half_life
 	Vector3.ZERO, # velocity
 	Vector3.ZERO, # frame_acceleration
 )
 var camera_touchpad_move:Vector2 = Vector2.ZERO
 
-# Camera Rotation
-var camera_rotate_x := ControlVariables.new(
-	1.5, # acceleration_speed_factor
+# Camera Rotation to Mouse Offsets on X and Y
+var camera_rotate_mouse := ControlVariables.new(
+	Vector2(0.2, 0.2), # acceleration_speed_factor
 	0.00, # velocity_half_life (velocity immediately reset)
-	0.0, # velocity
-	0.0, # frame_acceleration
-	-1.60, # min_bound
-	-0.20, # max_bound
+	Vector2.ZERO, # velocity
+	Vector2.ZERO, # frame_acceleration
+	Vector2(-1.60, -INF), # min_bound
+	Vector2(-0.20, INF), # max_bound
 )
 
-var camera_rotate_y := ControlVariables.new(
+# Camera Rotation to Keys on Y
+var camera_rotate_y_keys := ControlVariables.new(
 	1.5, # acceleration_speed_factor
 	0.15, # velocity_half_life
 	0.0, # velocity
@@ -40,7 +41,7 @@ var camera_zoom := ControlVariables.new(
 	0.15, # velocity_half_life
 	0.0, # velocity
 	0.0, # frame_acceleration
-	10.0, # min_bound
+	10.0, # min_bound # TODO: allow closer zoom
 	1000.0, # max_bound
 )
 
@@ -71,7 +72,7 @@ func _process(delta:float) -> void:
 	camera_base_move(delta)
 	camera_zoom_update(delta)
 	camera_automatic_pan(delta)
-	camera_base_rotate(delta)
+	camera_rotate_to_keys(delta)
 	camera_rotate_to_mouse_offsets(delta)
 	_show_fps()
 
@@ -96,10 +97,10 @@ func camera_base_move(delta:float) -> void:
 	if !camera_can_move_base: return
 
 	# Process Inputs
-	if Input.is_action_pressed("camera_forward"): camera_move.frame_acceleration -= transform.basis.z
-	if Input.is_action_pressed("camera_backward"): camera_move.frame_acceleration += transform.basis.z
-	if Input.is_action_pressed("camera_right"): camera_move.frame_acceleration += transform.basis.x
-	if Input.is_action_pressed("camera_left"): camera_move.frame_acceleration -= transform.basis.x
+	if Input.is_action_pressed("camera_move_forward"): camera_move.frame_acceleration -= transform.basis.z
+	if Input.is_action_pressed("camera_move_backward"): camera_move.frame_acceleration += transform.basis.z
+	if Input.is_action_pressed("camera_move_right"): camera_move.frame_acceleration += transform.basis.x
+	if Input.is_action_pressed("camera_move_left"): camera_move.frame_acceleration -= transform.basis.x
 	#camera_move.frame_acceleration.x += camera_touchpad_move.x 	# Temporarily disabled
 	#camera_move.frame_acceleration.z += camera_touchpad_move.y     # TODO: reenable
 	camera_move.frame_acceleration = camera_move.frame_acceleration.normalized()
@@ -114,34 +115,34 @@ func camera_base_move(delta:float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	
-		## Exit
+	## Exit
 	if Input.is_action_pressed("Exit"):
 		get_tree().quit()
 	
-	# Camera Move
-	if event is InputEventPanGesture:
-		camera_touchpad_move = event.delta
-
-	
-	# Camera Zoom
-	if event.is_action("camera_zoom_in"):
-		camera_zoom.frame_acceleration -= 1
-	elif  event.is_action("camera_zoom_out"):
-		camera_zoom.frame_acceleration += 1
-	if event is InputEventMagnifyGesture: # TODO: test
-		camera_zoom.frame_acceleration += (1-event.factor)
-	
-	
-	# Camera rotations		
-	if event.is_action_pressed("camera_rotate"):
-		mouse_last_position = get_viewport().get_mouse_position()
-		camera_is_rotating_mouse = true
-	elif event.is_action_released("camera_rotate"):
-		camera_is_rotating_mouse = false
-	
+	# Left Click
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		shoot_ray()
+
+
+	# Camera Move
+	if event is InputEventPanGesture: # TODO: test
+		camera_touchpad_move = event.delta
+	
+	# Camera Zoom
+	if event.is_action_pressed("camera_zoom_in"):
+		camera_zoom.frame_acceleration -= 1
+	elif  event.is_action_pressed("camera_zoom_out"):
+		camera_zoom.frame_acceleration += 1
+	if event is InputEventMagnifyGesture: # TODO: test if possible (touchpad does not register as this)
+		print("magnify ", event, " ", event.factor)
+		camera_zoom.frame_acceleration += (1-event.factor)
+	
+	# Camera Rotation
+	if event.is_action_pressed("camera_rotate_mouse"):
+		mouse_last_position = get_viewport().get_mouse_position()
+		camera_is_rotating_mouse = true
+	elif event.is_action_released("camera_rotate_mouse"):
+		camera_is_rotating_mouse = false
 
 
 func camera_zoom_update(delta:float) -> void:
@@ -160,42 +161,44 @@ func camera_zoom_update(delta:float) -> void:
 func camera_rotate_to_mouse_offsets(delta:float) -> void:
 	if !camera_can_rotate_by_mouse_offfset or !camera_is_rotating_mouse: return
 	
-	var mouse_offset:Vector2 = get_viewport().get_mouse_position()
+	var mouse_offset := get_viewport().get_mouse_position()
 	mouse_offset = mouse_offset - mouse_last_position
 	mouse_last_position = get_viewport().get_mouse_position()
 	
 	# Process Inputs
-	camera_rotate_x.frame_acceleration += mouse_offset.y
-	
-	# Add acceleration to velocity and reset
-	camera_rotate_x.velocity += camera_rotate_x.frame_acceleration * camera_rotate_x.acceleration_speed_factor
-	camera_rotate_x.frame_acceleration = 0.0
+	camera_rotate_mouse.frame_acceleration.x += mouse_offset.y # This invertion is intentional
+	camera_rotate_mouse.frame_acceleration.y += mouse_offset.x
 
-	# Apply velocity and dampen
-	# TODO: reenable y rotation on mouse
-	#rotation.y += mouse_offset.x * camera_rotate_x.acceleration_speed_factor * delta # Remove comment to get y rotation on mouse
-	camera_socket.rotation.x -= camera_rotate_x.velocity * delta
-	camera_socket.rotation.x = clamp(camera_socket.rotation.x, camera_rotate_x.min_bound, camera_rotate_x.max_bound)
-	camera_rotate_x.velocity *= _dampen_with_half_life(camera_rotate_x.velocity_half_life, delta)
+	# Add acceleration to velocity and reset
+	camera_rotate_mouse.velocity += camera_rotate_mouse.frame_acceleration * camera_rotate_mouse.acceleration_speed_factor
+	camera_rotate_mouse.frame_acceleration = Vector2.ZERO
+
+	# Apply velocity, dampen and clamp to bounds
+	var rot := Vector2(camera_socket.rotation.x, rotation.y)
+	rot -= camera_rotate_mouse.velocity * delta
+	rot = rot.clamp(camera_rotate_mouse.min_bound, camera_rotate_mouse.max_bound)
+	camera_socket.rotation.x = rot.x
+	rotation.y = rot.y
+	camera_rotate_mouse.velocity *= _dampen_with_half_life(camera_rotate_mouse.velocity_half_life, delta)
 	
 	
 # Rotates the camera base
-func camera_base_rotate(delta:float) -> void:
+func camera_rotate_to_keys(delta:float) -> void:
 	if !camera_can_rotate_base: return
 
 	# Process Inputs
 	if Input.is_action_pressed("camera_rotate_right"):
-		camera_rotate_y.frame_acceleration -= 1
+		camera_rotate_y_keys.frame_acceleration -= 1
 	elif Input.is_action_pressed("camera_rotate_left"):
-		camera_rotate_y.frame_acceleration += 1
+		camera_rotate_y_keys.frame_acceleration += 1
 	
 	# Add acceleration to velocity and reset
-	camera_rotate_y.velocity += camera_rotate_y.frame_acceleration * camera_rotate_y.acceleration_speed_factor
-	camera_rotate_y.frame_acceleration = 0.0
+	camera_rotate_y_keys.velocity += camera_rotate_y_keys.frame_acceleration * camera_rotate_y_keys.acceleration_speed_factor
+	camera_rotate_y_keys.frame_acceleration = 0.0
 	
 	# Apply velocity and dampen
-	rotation.y += camera_rotate_y.velocity * delta
-	camera_rotate_y.velocity *= _dampen_with_half_life(camera_rotate_y.velocity_half_life, delta)
+	rotation.y += camera_rotate_y_keys.velocity * delta
+	camera_rotate_y_keys.velocity *= _dampen_with_half_life(camera_rotate_y_keys.velocity_half_life, delta)
 	
 	
 # Pans the camera automatically based on screen margins
@@ -239,4 +242,5 @@ func shoot_ray():
 # Helpers (Variant means float or vector)
 var __NLOG2 = - log(2)
 func _dampen_with_half_life(half_life:float, delta:float) -> Variant: # TODO: migrate to helper
+	if half_life == 0: return 0 # Fully reset velocity if half_life is 0
 	return exp(__NLOG2 * delta / half_life)
