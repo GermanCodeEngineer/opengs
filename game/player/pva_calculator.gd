@@ -11,33 +11,38 @@ var min_bound: Variant
 var max_bound: Variant
 
 # Internal
-var __starting_value: Variant
+var starting_value: Variant
 
 # Changing
 var velocity: Variant
 var frame_acceleration: Variant # Auto merged into velocity, reset each frame
 
 
-func _init(global_node: Node3D, _acceleration_speed_factor, _velocity_half_life: float, _min_bound, _max_bound, starting_value):
+func _init(global_node: Node3D, _acceleration_speed_factor, _velocity_half_life: float, _min_bound, _max_bound, _starting_value):
 	global = global_node
 	acceleration_speed_factor = _acceleration_speed_factor
 	velocity_half_life = _velocity_half_life
 	min_bound = _min_bound
 	max_bound = _max_bound
-	velocity = starting_value
-	frame_acceleration = starting_value
-	__starting_value = starting_value
+	velocity = _starting_value
+	frame_acceleration = _starting_value
+	starting_value = _starting_value
 
 func process(delta: float) -> void:
-	# Add acceleration to velocity and reset
-	velocity += get_final_frame_acceleration() * acceleration_speed_factor
-	frame_acceleration = __starting_value
+	update_velocity()
 	
 	# Apply velocity, dampen and clamp to bounds
 	set_value(get_value() + velocity * delta)
 	set_value(_clamp(get_value(), min_bound, max_bound))
 	velocity *= _dampen_with_half_life(velocity_half_life, delta)
-		
+
+
+# Can be overridden by subclases
+func update_velocity() -> void:
+	# Add acceleration to velocity and reset
+	velocity += get_final_frame_acceleration() * acceleration_speed_factor
+	frame_acceleration = starting_value
+
 
 # Must be overridden by subclasses
 func get_value() -> Variant:
@@ -70,5 +75,5 @@ func _dampen_with_half_life(half_life:float, delta:float) -> Variant: # TODO: mi
 func _clamp(value:Variant, min_val:Variant, max_val:Variant) -> Variant:
 	if value is float:
 		return clamp(value, min_val, max_val)
-	else:
+	else: # vectors
 		return value.clamp(min_val, max_val)

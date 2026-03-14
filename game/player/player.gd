@@ -5,41 +5,122 @@ signal province_selected
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
 
-# Control Variables # TODO: fine tune
-# Camera Movement
-# TODO: scale movement with with zoom
-class MovementCalculator extends PVACalculator:
-	var touchpad_frame_acc:Vector2 = Vector2.ZERO
+const CAMERA_TRANSLATION_MIN_BOUND := Vector3(-INF, -INF, -INF)
+const CAMERA_TRANSLATION_MAX_BOUND := Vector3(INF, INF, INF)
+const CAMERA_ROTATION_MIN_BOUND := Vector2(deg_to_rad(-90), -INF)
+const CAMERA_ROTATION_MAX_BOUND := Vector2(deg_to_rad(-15), INF)
 
+# Flags
+@export var camera_can_process:bool = true
+@export var camera_can_move:bool = true
+@export var camera_can_zoom:bool = true
+@export var camera_can_rotate_by_mouse_offset:bool = true
+@export var camera_can_rotate_by_keys:bool = true
+@export var camera_can_automatic_pan:bool = false
+
+# Camera move settings
+@export var camera_move_acceleration_speed_factor:Vector3 = Vector3(0.5, 0.5, 0.5)
+@export var camera_move_velocity_half_life:float = 0.15
+
+# Camera automatic pan settings
+@export var camera_automatic_pan_acceleration_speed_factor:float = 0.5
+@export var camera_automatic_pan_velocity_half_life:float = 0.06
+@export_range(0,32,4) var camera_automatic_pan_margin:int = 16
+
+# Camera rotate mouse settings
+@export var camera_rotate_mouse_acceleration_speed_factor:Vector2 = Vector2(0.2, 0.2)
+@export var camera_rotate_mouse_velocity_half_life:float = 0.00
+
+# Camera rotate keys settings
+@export var camera_rotate_keys_acceleration_speed_factor:Vector2 = Vector2(0.6, 0.6)
+@export var camera_rotate_keys_velocity_half_life:float = 0.15
+
+# Camera zoom settings
+@export var camera_zoom_acceleration_speed_factor:float = 300.0
+@export var camera_zoom_velocity_half_life:float = 0.15
+@export var camera_zoom_min_bound:float = 10.0
+@export var camera_zoom_max_bound:float = 1000.0
+
+# Control Variables
+class CameraTranslationCalculator extends PVACalculator:
 	func get_value() -> Vector3:
 		return global.position
-	
+
 	func set_value(val) -> void:
 		global.position = val
-	
+
+	@warning_ignore("unused_parameter")
 	func on_input_event(event: InputEvent) -> void:
-		# TODO: test if possible (touchpad does not register as this)
-		if event is InputEventPanGesture:
-			self.touchpad_frame_acc = event.delta
+		pass
+
+	func update_velocity() -> void:
+		# Share zoom-scaled translation behavior for movement and edge panning.
+		self.velocity += self.get_final_frame_acceleration() * self.acceleration_speed_factor * global.camera_zoom.get_value()
+		self.frame_acceleration = self.starting_value
+
+# Camera Movement
+class MovementCalculator extends CameraTranslationCalculator:
+	var touchpad_frame_acc:Vector2 = Vector2.ZERO
+	
+	@warning_ignore("unused_parameter")
+	func on_input_event(event: InputEvent) -> void:
+		pass # TODO: test if this works (no touchpad action registers as this on windows)
+		#if event is InputEventPanGesture:
+		#	self.touchpad_frame_acc = event.delta
 	
 	func get_final_frame_acceleration() -> Vector3:
 		if Input.is_action_pressed("camera_move_forward"): self.frame_acceleration -= global.transform.basis.z
 		if Input.is_action_pressed("camera_move_backward"): self.frame_acceleration += global.transform.basis.z
 		if Input.is_action_pressed("camera_move_right"): self.frame_acceleration += global.transform.basis.x
 		if Input.is_action_pressed("camera_move_left"): self.frame_acceleration -= global.transform.basis.x
-		self.frame_acceleration.x += self.touchpad_frame_acc.x 	# Temporarily disabled
-		self.frame_acceleration.z += self.touchpad_frame_acc.y  # TODO: reenable
+		#self.frame_acceleration.x += self.touchpad_frame_acc.x # Disabled for now, couldn't be tested
+		#self.frame_acceleration.z += self.touchpad_frame_acc.y
 		self.touchpad_frame_acc = Vector2.ZERO # Reset touchpad movement each frame
 		self.frame_acceleration = self.frame_acceleration.normalized()
 		return self.frame_acceleration
 
 var camera_move := MovementCalculator.new(
 	self, # global_node
-	Vector3(50.0, 50.0, 50.0), # acceleration_speed_factor
-	0.15, # velocity_half_life
-	Vector3(-INF, -INF, -INF), # min_bound # TODO: calculate bounds?
-	Vector3(INF, INF, INF), # max_bound
-	Vector3.ZERO, # starting_value
+	camera_move_acceleration_speed_factor,
+	camera_move_velocity_half_life,
+	CAMERA_TRANSLATION_MIN_BOUND,
+	CAMERA_TRANSLATION_MAX_BOUND,
+	Vector3.ZERO,
+)
+
+
+# Camera Panning by screen edges
+class AutomaticPanCalculator extends CameraTranslationCalculator:
+	func get_final_frame_acceleration() -> Vector3:
+		var viewport_current:Viewport = global.get_viewport()
+		var viewport_visible_rectangle:Rect2i = Rect2i(viewport_current.get_visible_rect())
+		var viewport_size:Vector2i = viewport_visible_rectangle.size
+		var current_mouse_position:Vector2 = viewport_current.get_mouse_position()
+		var margin:float = global.camera_automatic_pan_margin
+
+		if margin <= 0:
+			return Vector3.ZERO
+
+		var pan_direction:Vector2 = Vector2.ZERO
+		if current_mouse_position.x < margin:
+			pan_direction.x = -1
+		elif current_mouse_position.x > viewport_size.x - margin:
+			pan_direction.x = 1
+
+		if current_mouse_position.y < margin:
+			pan_direction.y = -1
+		elif current_mouse_position.y > viewport_size.y - margin:
+			pan_direction.y = 1
+
+		return global.transform.basis.x * pan_direction.x + global.transform.basis.z * pan_direction.y
+
+var camera_automatic_pan := AutomaticPanCalculator.new(
+	self, # global_node
+	camera_automatic_pan_acceleration_speed_factor,
+	camera_automatic_pan_velocity_half_life,
+	CAMERA_TRANSLATION_MIN_BOUND,
+	CAMERA_TRANSLATION_MAX_BOUND,
+	Vector3.ZERO,
 )
 
 
@@ -72,11 +153,11 @@ class MouseRotationCalculator extends PVACalculator:
 
 var camera_rotate_mouse := MouseRotationCalculator.new(
 	self, # global_node
-	Vector2(0.2, 0.2), # acceleration_speed_factor
-	0.00, # velocity_half_life (velocity immediately reset)
-	Vector2(deg_to_rad(-90), -INF), # min_bound
-	Vector2(deg_to_rad(-15), INF), # max_bound
-	Vector2.ZERO, # starting_value
+	camera_rotate_mouse_acceleration_speed_factor,
+	camera_rotate_mouse_velocity_half_life,
+	CAMERA_ROTATION_MIN_BOUND,
+	CAMERA_ROTATION_MAX_BOUND,
+	Vector2.ZERO,
 )
 
 
@@ -99,18 +180,18 @@ class KeysRotationCalculator extends PVACalculator:
 		elif Input.is_action_pressed("camera_rotate_left"):
 			self.frame_acceleration += Vector2(0, -1)
 		if Input.is_action_pressed("camera_rotate_up"):
-			self.frame_acceleration += Vector2(1, 0)
-		elif Input.is_action_pressed("camera_rotate_down"):
 			self.frame_acceleration += Vector2(-1, 0)
+		elif Input.is_action_pressed("camera_rotate_down"):
+			self.frame_acceleration += Vector2(1, 0)
 		return self.frame_acceleration
 
 var camera_rotate_keys := KeysRotationCalculator.new(
 	self, # global_node
-	Vector2(1.2, 1.2), # acceleration_speed_factor
-	0.15, # velocity_half_life
-	Vector2(deg_to_rad(-90), -INF), # min_bound
-	Vector2(deg_to_rad(-15), INF), # max_bound
-	Vector2.ZERO, # starting_value
+	camera_rotate_keys_acceleration_speed_factor,
+	camera_rotate_keys_velocity_half_life,
+	CAMERA_ROTATION_MIN_BOUND,
+	CAMERA_ROTATION_MAX_BOUND,
+	Vector2.ZERO,
 )
 
 
@@ -127,34 +208,20 @@ class ZoomCalculator extends PVACalculator:
 			self.frame_acceleration -= 1
 		elif  event.is_action_pressed("camera_zoom_out"):
 			self.frame_acceleration += 1
-		if event is InputEventMagnifyGesture: # TODO: test if possible (touchpad does not register as this)
+		if event is InputEventMagnifyGesture:
 			self.frame_acceleration += (1-event.factor)
 	
 	func get_final_frame_acceleration() -> float:
 		return self.frame_acceleration
 
-var camera_zoom := ZoomCalculator.new( # TODO: combine with movement calculator?
+var camera_zoom := ZoomCalculator.new(
 	self, # global_node
-	300.0, # acceleration_speed_factor
-	0.15, # velocity_half_life
-	10.0, # min_bound
-	1000.0, # max_bound
-	0.0, # starting_value
+	camera_zoom_acceleration_speed_factor,
+	camera_zoom_velocity_half_life,
+	camera_zoom_min_bound,
+	camera_zoom_max_bound,
+	0.0,
 )
-
-
-# Camera Panning
-@export_range(0,32,4) var camera_automatic_pan_margin:int = 16
-@export_range(0,20,0.5) var camera_automatic_pan_speed:float = 18
-
-
-# Flags
-@export var camera_can_process:bool = true
-@export var camera_can_move:bool = true
-@export var camera_can_zoom:bool = true
-@export var camera_can_rotate_by_mouse_offset:bool = true
-@export var camera_can_rotate_by_keys:bool = true
-@export var camera_can_automatic_pan:bool = false
 
 
 
@@ -173,8 +240,9 @@ func _process(delta:float) -> void:
 		camera_rotate_mouse.process(delta)
 	if camera_can_rotate_by_keys:
 		camera_rotate_keys.process(delta)
-	
-	camera_automatic_pan(delta)
+	if camera_can_automatic_pan:
+		camera_automatic_pan.process(delta)
+
 	_show_fps()
 
 # Show FPS on the window
@@ -196,7 +264,7 @@ func _show_fps():
 
 # Input event handling
 func _unhandled_input(event: InputEvent) -> void:
-	## Exit
+	# Exit
 	if Input.is_action_pressed("Exit"):
 		get_tree().quit()
 	
@@ -213,35 +281,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera_rotate_mouse.on_input_event(event)
 	if camera_can_rotate_by_keys:
 		camera_rotate_keys.on_input_event(event)
+	if camera_can_automatic_pan:
+		camera_automatic_pan.on_input_event(event)
 
-	
-# Pans the camera automatically based on screen 
-# TODO: move to PVA system?
-func camera_automatic_pan(delta:float) -> void:
-	if !camera_can_automatic_pan: return
-	
-	var viewport_current:Viewport = get_viewport()
-	var pan_direction:Vector2 = Vector2(-1,-1) # Starts negative
-	var viewport_visible_rectangle:Rect2i = Rect2i(viewport_current.get_visible_rect())
-	var viewport_size:Vector2i = viewport_visible_rectangle.size
-	var current_mouse_position:Vector2 = viewport_current.get_mouse_position()
-	var margin:float = camera_automatic_pan_margin # Shortcut var
-	
-	var zoom_factor:float = camera_zoom.get_value() * 0.1
-	
-	# X pan
-	if ((current_mouse_position.x < margin) or (current_mouse_position.x > viewport_size.x - margin)):
-		if current_mouse_position.x > viewport_size.x/2.0:
-			pan_direction.x = 1
-		translate(Vector3(pan_direction.x * delta * camera_automatic_pan_speed * zoom_factor,0,0))
-	
-	# Y pan
-	if ((current_mouse_position.y < margin) or (current_mouse_position.y > viewport_size.y - margin)):
-		if current_mouse_position.y > viewport_size.y/2.0:
-			pan_direction.y = 1
-		translate(Vector3(0, 0, pan_direction.y * delta * camera_automatic_pan_speed * zoom_factor))
 
-	
 func shoot_ray():
 	var mouse_pos = get_viewport().get_mouse_position()
 	var ray_length = 2000
