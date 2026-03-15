@@ -5,44 +5,49 @@ signal province_selected
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
 
-const CAMERA_TRANSLATION_MIN_BOUND := Vector3(-INF, -INF, -INF)
-const CAMERA_TRANSLATION_MAX_BOUND := Vector3(INF, INF, INF)
-const CAMERA_ROTATION_MIN_BOUND := Vector2(deg_to_rad(-90), -INF)
-const CAMERA_ROTATION_MAX_BOUND := Vector2(deg_to_rad(-15), INF)
+@export_category("Camera Motion Control")
+@export var camera_can_process := true
+@export var camera_can_move := true
+@export var camera_can_zoom := true
+@export var camera_can_rotate_by_mouse_offset := true
+@export var camera_can_rotate_by_keys := true
+@export var camera_can_automatic_pan := false
 
-# Flags
-@export var camera_can_process:bool = true
-@export var camera_can_move:bool = true
-@export var camera_can_zoom:bool = true
-@export var camera_can_rotate_by_mouse_offset:bool = true
-@export var camera_can_rotate_by_keys:bool = true
-@export var camera_can_automatic_pan:bool = false
+@export_group("⚠️ Inspector Warning ⚠️")
+@export_multiline var inspector_warning_note := """\
+Remote/runtime Inspector edits of the properties below are temporary only.
+Edit the scene node and save to persist changes.\
+"""
+@export_category("Camera Move Settings")
+@export var camera_move_acceleration_speed_factor := Vector3(0.5, 0.5, 0.5)
+@export var camera_move_velocity_half_life := 0.15
 
-# Camera move settings
-@export var camera_move_acceleration_speed_factor:Vector3 = Vector3(0.5, 0.5, 0.5)
-@export var camera_move_velocity_half_life:float = 0.15
+@export var camera_position_min_bound := Vector3(-INF, -INF, -INF)
+@export var camera_position_max_bound := Vector3(INF, INF, INF)
 
-# Camera automatic pan settings
-@export var camera_automatic_pan_acceleration_speed_factor:float = 0.5
-@export var camera_automatic_pan_velocity_half_life:float = 0.06
-@export_range(0,32,4) var camera_automatic_pan_margin:int = 16
+@export_category("Camera Automatic Pan Settings")
+@export var camera_automatic_pan_acceleration_speed_factor := 0.5
+@export var camera_automatic_pan_velocity_half_life := 0.06
+@export_range(0,32,4) var camera_automatic_pan_margin := 16
 
-# Camera rotate mouse settings
-@export var camera_rotate_mouse_acceleration_speed_factor:Vector2 = Vector2(0.2, 0.2)
-@export var camera_rotate_mouse_velocity_half_life:float = 0.00
+@export_category("Camera Rotation Settings")
+@export var camera_rotate_mouse_acceleration_speed_factor := Vector2(0.2, 0.2)
+@export var camera_rotate_mouse_velocity_half_life := 0.00
 
-# Camera rotate keys settings
-@export var camera_rotate_keys_acceleration_speed_factor:Vector2 = Vector2(0.6, 0.6)
-@export var camera_rotate_keys_velocity_half_life:float = 0.15
+@export var camera_rotate_keys_acceleration_speed_factor := Vector2(0.6, 0.6)
+@export var camera_rotate_keys_velocity_half_life := 0.15
 
-# Camera zoom settings
-@export var camera_zoom_acceleration_speed_factor:float = 300.0
-@export var camera_zoom_velocity_half_life:float = 0.15
-@export var camera_zoom_min_bound:float = 10.0
-@export var camera_zoom_max_bound:float = 1000.0
+@export var camera_rotation_min_bound := Vector2(deg_to_rad(-90), -INF)
+@export var camera_rotation_max_bound := Vector2(deg_to_rad(-15), INF)
+
+@export_category("Camera Zoom Settings")
+@export var camera_zoom_acceleration_speed_factor := 300.0
+@export var camera_zoom_velocity_half_life := 0.15
+@export var camera_zoom_min_bound := 10.0
+@export var camera_zoom_max_bound := 1000.0
 
 # Control Variables
-class CameraTranslationCalculator extends PVACalculator:
+class CameraTranslationCalculator extends PVACalculator: # Base class for camera movement and panning
 	func get_value() -> Vector3:
 		return global.position
 
@@ -55,7 +60,8 @@ class CameraTranslationCalculator extends PVACalculator:
 
 	func update_velocity() -> void:
 		# Share zoom-scaled translation behavior for movement and edge panning.
-		self.velocity += self.get_final_frame_acceleration() * self.acceleration_speed_factor * global.camera_zoom.get_value()
+		var safe_zoom = global.camera_zoom._clamp_value(global.camera_zoom.get_value())
+		self.velocity += self.get_final_frame_acceleration() * self.acceleration_speed_factor * safe_zoom
 		self.frame_acceleration = self.starting_value
 
 # Camera Movement
@@ -83,8 +89,8 @@ var camera_move := MovementCalculator.new(
 	self, # global_node
 	camera_move_acceleration_speed_factor,
 	camera_move_velocity_half_life,
-	CAMERA_TRANSLATION_MIN_BOUND,
-	CAMERA_TRANSLATION_MAX_BOUND,
+	camera_position_min_bound,
+	camera_position_max_bound,
 	Vector3.ZERO,
 )
 
@@ -118,8 +124,8 @@ var camera_automatic_pan := AutomaticPanCalculator.new(
 	self, # global_node
 	camera_automatic_pan_acceleration_speed_factor,
 	camera_automatic_pan_velocity_half_life,
-	CAMERA_TRANSLATION_MIN_BOUND,
-	CAMERA_TRANSLATION_MAX_BOUND,
+	camera_position_min_bound,
+	camera_position_max_bound,
 	Vector3.ZERO,
 )
 
@@ -155,8 +161,8 @@ var camera_rotate_mouse := MouseRotationCalculator.new(
 	self, # global_node
 	camera_rotate_mouse_acceleration_speed_factor,
 	camera_rotate_mouse_velocity_half_life,
-	CAMERA_ROTATION_MIN_BOUND,
-	CAMERA_ROTATION_MAX_BOUND,
+	camera_rotation_min_bound,
+	camera_rotation_max_bound,
 	Vector2.ZERO,
 )
 
@@ -189,8 +195,8 @@ var camera_rotate_keys := KeysRotationCalculator.new(
 	self, # global_node
 	camera_rotate_keys_acceleration_speed_factor,
 	camera_rotate_keys_velocity_half_life,
-	CAMERA_ROTATION_MIN_BOUND,
-	CAMERA_ROTATION_MAX_BOUND,
+	camera_rotation_min_bound,
+	camera_rotation_max_bound,
 	Vector2.ZERO,
 )
 
@@ -242,24 +248,6 @@ func _process(delta:float) -> void:
 		camera_rotate_keys.process(delta)
 	if camera_can_automatic_pan:
 		camera_automatic_pan.process(delta)
-
-	_show_fps()
-
-# Show FPS on the window
-func _show_fps():
-	var fps = Engine.get_frames_per_second()
-	var label_text = "FPS: %d  Rot: (X: %.1fr, Y: %.1fr)" % [fps, camera_rotate_mouse.get_value().x, camera_rotate_mouse.get_value().y]
-	if not has_node("FPSLabel"):
-		var label = Label.new()
-		label.name = "FPSLabel"
-		label.text = label_text
-		label.set_position(Vector2(10, 10))
-		label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		label.add_theme_color_override("font_color", Color(1,1,0))
-		add_child(label)
-	else:
-		var label = get_node("FPSLabel")
-		label.text = label_text
 
 
 # Input event handling

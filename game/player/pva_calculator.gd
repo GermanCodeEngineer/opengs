@@ -32,9 +32,9 @@ func process(delta: float) -> void:
 	update_velocity()
 	
 	# Apply velocity, dampen and clamp to bounds
-	set_value(get_value() + velocity * delta)
-	set_value(_clamp(get_value(), min_bound, max_bound))
-	velocity *= _dampen_with_half_life(velocity_half_life, delta)
+	var new_value = get_value() + velocity * delta
+	set_value(_clamp_value(new_value))
+	velocity *= _dampen_with_half_life(delta)
 
 
 # Can be overridden by subclases
@@ -68,12 +68,12 @@ func on_input_event(event: InputEvent) -> void:
 
 # Helpers (Variant means float or vector)
 var __NLOG2 = - log(2)
-func _dampen_with_half_life(half_life:float, delta:float) -> Variant: # TODO: migrate to helper
-	if half_life == 0: return 0 # Fully reset velocity if half_life is 0
-	return exp(__NLOG2 * delta / half_life)
+func _dampen_with_half_life(delta:float) -> Variant: # TODO: migrate to helper
+	if velocity_half_life == 0: return 0 # Fully reset velocity if half_life is 0
+	return exp(__NLOG2 * delta / velocity_half_life)
 
-func _clamp(value:Variant, min_val:Variant, max_val:Variant) -> Variant:
+func _clamp_value(value:Variant) -> Variant:
 	if value is float:
-		return clamp(value, min_val, max_val)
+		return clamp(value, min_bound, max_bound)
 	else: # vectors
-		return value.clamp(min_val, max_val)
+		return value.clamp(min_bound, max_bound)
