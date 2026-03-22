@@ -52,7 +52,11 @@ func _create_color_map(province_color_to_lookup, color_to_province, type) -> Ima
 				Type.TERRITORY:
 					_color_map.set_pixel(x, y, sibling_province.color)
 					_color_map.set_pixel(x, y + SECONDARY_OFFSET, sibling_province.color)
-				
+		
+		# TEMPORARY
+		if province.type == Province.Type.OCEAN:
+			_color_map.set_pixel(x, y, province_color)
+			_color_map.set_pixel(x, y + SECONDARY_OFFSET, province_color)
 					
 	return _color_map
 

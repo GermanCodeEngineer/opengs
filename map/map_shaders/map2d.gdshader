@@ -2,7 +2,12 @@ shader_type canvas_item;
 
 uniform sampler2D lookup_image: source_color, filter_nearest;
 uniform sampler2D color_map_image: source_color, filter_nearest;
-uniform sampler2D province_border_image: source_color, filter_nearest;
+uniform sampler2D province_border_image: source_color, filter_linear_mipmap, repeat_enable;
+
+vec3 border_color(vec3 color) {
+	vec3 darkend = color - vec3(0.15);
+	return max(darkend, 0.0);
+}
 
 void fragment() {
 	// Variables
@@ -29,9 +34,10 @@ void fragment() {
 	// Set checkers
 	vec4 final_color = mix(map_mode_primary,map_mode_secondary,float(checkers_pattern));
 
-	// Darken province borders
-	float is_border = 1.0 - province_border_texture.r;
-	final_color.rgb = mix(final_color.rgb, final_color.rgb * 0.9, is_border);
+	// Darken province borders (soft mask for anti-aliasing)
+	float border_mask = 1.0 - province_border_texture.r;
+	float is_border = smoothstep(0.25, 0.75, border_mask);
+	final_color.rgb = mix(final_color.rgb, border_color(final_color.rgb), is_border);
 
 	// Selection edge highlighting (green = province border, white = territory border)
 	// if (length(selected_color.rgb) > 0.01 && is_border > 0.01) {
