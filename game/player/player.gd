@@ -4,6 +4,10 @@ signal province_selected
 # Nodes
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
+@onready var map_node: Node = get_node("/root/MainGame/Map")
+@export var debug_draw_uv_markers := true
+@onready var map_col: CollisionShape3D = get_node_or_null("/root/MainGame/Map/CollisionShape3D") as CollisionShape3D
+var map_box: BoxShape3D = null
 
 @export_category("Camera Motion Control")
 @export var camera_can_process := true
@@ -233,7 +237,13 @@ var camera_zoom := ZoomCalculator.new(
 
 
 func _ready() -> void:
-	pass
+	# cache BoxShape3D for fast access and validate
+	if map_col != null and map_col.shape != null:
+		map_box = map_col.shape as BoxShape3D
+	else:
+		map_box = null
+	if debug_draw_uv_markers:
+		draw_uv_markers()
 	
 func _process(delta:float) -> void:
 	if !camera_can_process: return
@@ -284,4 +294,95 @@ func shoot_ray():
 	ray_query.to = to
 	var raycast_result = space.intersect_ray(ray_query)
 	if !raycast_result.is_empty():
-		province_selected.emit(Vector2(raycast_result.position.x,raycast_result.position.z))
+		print("Viewport is ", get_viewport())
+		var uv := world_to_map_uv(raycast_result.position)
+		province_selected.emit(uv)
+
+
+func world_to_map_uv(world_pos: Vector3) -> Vector2:
+	# TODO: move this outside this function
+	if map_node == null:
+		push_error("Map node not found at /root/MainGame/Map")
+		return Vector2.ZERO
+	if not map_node.has_node("CollisionShape3D"):
+		push_error("CollisionShape3D node not found in the Map node.")
+	if map_box == null:
+		push_error("BoxShape3D not found in the Map's CollisionShape3D.")
+		return Vector2.ZERO
+	var size: Vector3 = map_box.size
+	var center: Vector3 = map_node.global_transform.origin
+	var local := world_pos - center
+	var rel_x := (local.x / size.x) + 0.5
+	var rel_y := (local.z / size.z) + 0.5
+	rel_x = clamp(rel_x, 0.0, 1.0)
+	rel_y = clamp(rel_y, 0.0, 1.0)
+	print("World Pos: ", world_pos, " Local Pos: ", local, " Rel UV: ", Vector2(rel_x, rel_y))
+	return Vector2(rel_x, rel_y)
+
+
+func map_uv_to_world(uv: Vector2) -> Vector3:
+	if map_node == null or map_box == null:
+		return Vector3.ZERO
+	var size: Vector3 = map_box.size
+	var center: Vector3 = map_node.global_transform.origin
+	var local_x := (uv.x - 0.5) * size.x
+	var local_z := (uv.y - 0.5) * size.z
+	return center + Vector3(local_x, 0.0, local_z)
+
+
+# TODO: remove in production
+func _make_cross_marker(pos: Vector3, marker_name: String) -> void:
+	if map_node == null:
+		return
+	var markers_container: Node3D
+	if map_node.has_node("UVMarkers"):
+		markers_container = map_node.get_node("UVMarkers") as Node3D
+	else:
+		markers_container = Node3D.new()
+		markers_container.name = "UVMarkers"
+		map_node.add_child(markers_container)
+
+	if map_box == null:
+		return
+	var box: BoxShape3D = map_box
+	var max_dim: float = max(box.size.x, box.size.z)
+	var arm: float = max_dim * 0.03
+	var thickness: float = arm * 0.12
+
+	var marker_root := Node3D.new()
+	marker_root.name = marker_name
+	marker_root.global_transform = Transform3D(Basis(), pos + Vector3(0, 1.0, 0))
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1, 0, 0)
+	mat.metallic = 0.0
+
+	var box_x := BoxMesh.new()
+	box_x.size = Vector3(arm, thickness * 0.5, thickness)
+	var mi_x := MeshInstance3D.new()
+	mi_x.mesh = box_x
+	mi_x.material_override = mat
+	marker_root.add_child(mi_x)
+
+	var box_z := BoxMesh.new()
+	box_z.size = Vector3(thickness, thickness * 0.5, arm)
+	var mi_z := MeshInstance3D.new()
+	mi_z.mesh = box_z
+	mi_z.material_override = mat
+	marker_root.add_child(mi_z)
+
+	markers_container.add_child(marker_root)
+
+
+func draw_uv_markers() -> void:
+	if map_node == null:
+		return
+	# clear previous markers
+	if map_node.has_node("UVMarkers"):
+		map_node.get_node("UVMarkers").queue_free()
+
+	var corners: Array[Vector2] = [Vector2(0.0, 0.0), Vector2(1.0, 0.0), Vector2(0.0, 1.0), Vector2(1.0, 1.0)]
+	for i in range(corners.size()):
+		var uv: Vector2 = corners[i] as Vector2
+		var world_pos: Vector3 = map_uv_to_world(uv)
+		_make_cross_marker(world_pos, "UVMarker_%d" % i)
