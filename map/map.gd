@@ -33,15 +33,9 @@ func _wait_for_province_image(max_frames: int = 120) -> Image:
 	return null
 
 
-func get_pixel_lookup_color(mouse_pos: Vector2) -> Color:
-	@warning_ignore("integer_division")
-	var offset_x = int(tex_gen.lookup_texture.get_width()/2)
-	@warning_ignore("integer_division")
-	var offset_y = int(tex_gen.lookup_texture.get_height()/2)
-	return tex_gen.lookup_texture.get_image().get_pixel(
-		int(mouse_pos.x * 10) + offset_x,
-		int(mouse_pos.y * 10) + offset_y,
-	)
+func get_pixel_lookup_color(rel_mouse_pos: Vector2) -> Color:
+	var mouse_pos = rel_mouse_pos * tex_gen.lookup_texture.get_size()
+	return tex_gen.lookup_texture.get_image().get_pixel(mouse_pos.x, mouse_pos.y)
 
 func create_map_textures() -> void:
 	var province_image := await _wait_for_province_image()
@@ -50,6 +44,8 @@ func create_map_textures() -> void:
 		return
 
 	tex_gen = MapTextureGenerator.new(province_image)
+	var lookup_img = tex_gen.lookup_texture.get_image()
+	print("[DEBUG] Created lookup_texture size: %dx%d" % [lookup_img.get_width(), lookup_img.get_height()])
 	map_material_2d.set_shader_parameter("lookup_image", tex_gen.lookup_texture)
 	map_material_2d.set_shader_parameter("province_border_image", tex_gen.border_texture)
 	tex_gen.lookup_texture.get_image().save_png("res://map/map_data/lut_preview.png") # remove in PROD, just for visuals in editor

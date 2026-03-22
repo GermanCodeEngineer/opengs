@@ -20,7 +20,7 @@ func _ready() -> void:
 
 
 func _on_controller_province_selected(mouse_pos: Vector2) -> void:
-	var rg_color: Color = $Map.get_pixel_lookup_color(mouse_pos)
+	var rg_color: Color = $Map.get_pixel_lookup_color(mouse_pos) # TODO: sync this file with map.gd
 	var selected_province_color: Color = db.lookup_to_color_province[rg_color]
 	selected_province = db.color_to_province[selected_province_color]
 	$Map.highlight_province(selected_province)
@@ -57,8 +57,10 @@ func _on_province_editor_change_owner_territory(province_owner: Country) -> void
 	
 
 
+@warning_ignore("unused_parameter")
 func _on_province_editor_change_type(index: int) -> void:
-	selected_province.type = index
+	pass # just do nothing to avoid the annoying warning
+	#selected_province.type = index
 
 
 func _on_province_editor_change_controller_territory(controller: Country) -> void:

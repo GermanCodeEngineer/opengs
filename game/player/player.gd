@@ -294,7 +294,6 @@ func shoot_ray():
 	ray_query.to = to
 	var raycast_result = space.intersect_ray(ray_query)
 	if !raycast_result.is_empty():
-		print("Viewport is ", get_viewport())
 		var uv := world_to_map_uv(raycast_result.position)
 		province_selected.emit(uv)
 
@@ -322,6 +321,7 @@ func world_to_map_uv(world_pos: Vector3) -> Vector2:
 
 func map_uv_to_world(uv: Vector2) -> Vector3:
 	if map_node == null or map_box == null:
+		push_error("BoxShape3D not found in the Map's CollisionShape3D.")
 		return Vector3.ZERO
 	var size: Vector3 = map_box.size
 	var center: Vector3 = map_node.global_transform.origin

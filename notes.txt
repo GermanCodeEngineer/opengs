@@ -1,0 +1,23 @@
+
+Loading Map from cache - Start
+Loading Map from cache - End
+[DEBUG] Created lookup_texture size: 9821x6347
+Viewport is root:<Window#33957086654>
+World Pos: (483.7382, 0.5, 306.8568) Local Pos: (483.7382, 0.5, 306.8568) Rel UV: (0.992555, 0.983467)
+Viewport is root:<Window#33957086654>
+World Pos: (-488.8702, 0.5, -316.8631) Local Pos: (-488.8702, 0.5, -316.8631) Rel UV: (0.00222, 0.000767)
+
+
+
+TOPLEFT
+Raycast: (-488.87, -316.86)
+Offset: (4910.5, 3173.5)
+10xRaycast (-4888.7, -3168.6)
+Total: (21.8, 4.9)
+
+
+BOTTOMRIGHT
+Raycast: (483.73, 306.85)
+Offset: (4910.5, 3173.5)
+10xRaycast (4837.3, 3068.5)
+Total: (9747.8, 6242.0)
