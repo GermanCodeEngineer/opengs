@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chvluf7yq1qvp"
-path="res://.godot/imported/provinces_1228x793_upscaled_9821x6347.png-54ca5ef597b69bb07a4683994e78c298.ctex"
+uid="uid://b2g6um55ov066"
+path="res://.godot/imported/provinces.png-1a9f7ba343d292b30cd02d2e05fdeeb0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://map/map_data/upscaled_provinces/provinces_1228x793_upscaled_9821x6347.png"
-dest_files=["res://.godot/imported/provinces_1228x793_upscaled_9821x6347.png-54ca5ef597b69bb07a4683994e78c298.ctex"]
+source_file="res://map/map_data/provinces.png"
+dest_files=["res://.godot/imported/provinces.png-1a9f7ba343d292b30cd02d2e05fdeeb0.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=3
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

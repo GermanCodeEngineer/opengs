@@ -1,5 +1,6 @@
 extends StaticBody3D
 
+@onready var sub_viewport: SubViewport = $MeshInstance3D/SubViewport
 @onready var map_sprite: Sprite2D = $MeshInstance3D/SubViewport/Sprite2D
 @onready var map_material_2d: ShaderMaterial = $MeshInstance3D/SubViewport/Sprite2D.material
 
@@ -19,6 +20,24 @@ var all_map_modes: Array[MapMode]
 
 func _ready() -> void:
 	await create_map_textures()
+
+func _process(_delta: float) -> void:
+	var image_name = null
+	if Input.is_action_just_pressed("set_province_image_full"):
+		image_name = "provinces_9821x6347.png"
+		print("Setting province image to full resolution.")
+	elif Input.is_action_just_pressed("set_province_image_half"):
+		image_name = "provinces_4910x3174.png"
+		print("Setting province image to half resolution.")
+	elif Input.is_action_just_pressed("set_province_image_quarter"):
+		image_name = "provinces_2455x1587.png"
+		print("Setting province image to quarter resolution.")
+
+	
+	if image_name != null:
+		var img = Image.load_from_file("res://map/map_data/scaled_provinces/" + image_name)
+		var tex = ImageTexture.create_from_image(img)
+		set_province_image(tex)
 
 
 func _wait_for_province_image(max_frames: int = 120) -> Image:
@@ -53,7 +72,7 @@ func create_map_textures() -> void:
 
 	# Set Sprite2D texture to lookup_texture
 	# It has the same size => less memory usage => the shader overrides the displayed content anyway
-	map_sprite.texture = tex_gen.lookup_texture
+	set_province_image(tex_gen.lookup_texture)
 
 func create_map_modes(db: Database) -> void:
 	mm_political = MapMode.new(tex_gen.province_color_to_lookup, db.color_to_province, MapMode.Type.POLITICAL)
@@ -76,6 +95,16 @@ func update_country_label(country: Country) -> void:
 		var label: CountryLabel = %CountryLabels.get_node(country.tag)
 		label.update_data(country)
 	
+
+# Sets the Sprite2D texture to the given image and scales it to fill the SubViewport
+func set_province_image(image: Texture2D) -> void:
+	map_sprite.texture = image
+	var sprite_size = image.get_size()
+	var viewport_size = sub_viewport.size
+	map_sprite.scale = Vector2(viewport_size.x / sprite_size.x, viewport_size.y / sprite_size.y)
+	print("Set province image with size: %dx%d, scaled to viewport size: %dx%d" % [sprite_size.x, sprite_size.y, viewport_size.x, viewport_size.y])
+
+
 func update_map() -> void:
 	map_material_2d.set_shader_parameter("color_map_image", current_map_mode)
 

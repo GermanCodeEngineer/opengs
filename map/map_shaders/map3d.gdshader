@@ -9,6 +9,7 @@ uniform sampler2D normalmap_image: hint_normal, repeat_enable;
 uniform float threshold = 0.1;
 uniform float aa_scale = 17.6;
 uniform float base_line_thickness = 0.38197;
+const bool enable_aa = false;
 const int ML = 0;
 
 // Diagonal line blending logic
@@ -37,21 +38,24 @@ void fragment() {
 	vec2 tex_size = vec2(textureSize(subview_image, 0));
 	vec2 ip = UV * tex_size;
 	vec4 s = texelFetch(subview_image, ivec2(ip), ML);
-	if (diag(s, ip, vec2(-1, 0), vec2(0, 1), base_line_thickness)) {
-		diag(s, ip, vec2(-1, 0), vec2(1, 1), 0.25);
-		diag(s, ip, vec2(-1, -1), vec2(0, 1), 0.25);
-	}
-	if (diag(s, ip, vec2(0, 1), vec2(1, 0), base_line_thickness)) {
-		diag(s, ip, vec2(0, 1), vec2(1, -1), 0.25);
-		diag(s, ip, vec2(-1, 1), vec2(1, 0), 0.25);
-	}
-	if (diag(s, ip, vec2(1, 0), vec2(0, -1), base_line_thickness)) {
-		diag(s, ip, vec2(1, 0), vec2(-1, -1), 0.25);
-		diag(s, ip, vec2(1, 1), vec2(0, -1), 0.25);
-	}
-	if (diag(s, ip, vec2(0, -1), vec2(-1, 0), base_line_thickness)) {
-		diag(s, ip, vec2(0, -1), vec2(-1, 1), 0.25);
-		diag(s, ip, vec2(1, -1), vec2(-1, 0), 0.25);
+	
+	if (enable_aa) {
+		if (diag(s, ip, vec2(-1, 0), vec2(0, 1), base_line_thickness)) {
+			diag(s, ip, vec2(-1, 0), vec2(1, 1), 0.25);
+			diag(s, ip, vec2(-1, -1), vec2(0, 1), 0.25);
+		}
+		if (diag(s, ip, vec2(0, 1), vec2(1, 0), base_line_thickness)) {
+			diag(s, ip, vec2(0, 1), vec2(1, -1), 0.25);
+			diag(s, ip, vec2(-1, 1), vec2(1, 0), 0.25);
+		}
+		if (diag(s, ip, vec2(1, 0), vec2(0, -1), base_line_thickness)) {
+			diag(s, ip, vec2(1, 0), vec2(-1, -1), 0.25);
+			diag(s, ip, vec2(1, 1), vec2(0, -1), 0.25);
+		}
+		if (diag(s, ip, vec2(0, -1), vec2(-1, 0), base_line_thickness)) {
+			diag(s, ip, vec2(0, -1), vec2(-1, 1), 0.25);
+			diag(s, ip, vec2(1, -1), vec2(-1, 0), 0.25);
+		}
 	}
 
 

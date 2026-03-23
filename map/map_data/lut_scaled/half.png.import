@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2g6um55ov066"
-path="res://.godot/imported/provinces.png-eeac524aabc783a306a9df95fcc452fc.ctex"
+uid="uid://0wapr46irvyr"
+path="res://.godot/imported/half.png-31716e39118e5ead994f5df9b5473bc0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://map/map_data/scaled_provinces/provinces.png"
-dest_files=["res://.godot/imported/provinces.png-eeac524aabc783a306a9df95fcc452fc.ctex"]
+source_file="res://map/map_data/lut_scaled/half.png"
+dest_files=["res://.godot/imported/half.png-31716e39118e5ead994f5df9b5473bc0.ctex"]
 
 [params]
 
-compress/mode=3
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

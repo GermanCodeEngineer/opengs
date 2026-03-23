@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dtdb7ftpp5sfj"
-path="res://.godot/imported/provinces_614x397.png-c9bc881ffcc836a697469b70c5403011.ctex"
+uid="uid://dn3ycq7huyqcw"
+path="res://.godot/imported/half.png-7e8311224924b49a905f3904fed618d3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://map/map_data/scaled_provinces/provinces_614x397.png"
-dest_files=["res://.godot/imported/provinces_614x397.png-c9bc881ffcc836a697469b70c5403011.ctex"]
+source_file="res://map/map_data/bt_scaled/half.png"
+dest_files=["res://.godot/imported/half.png-7e8311224924b49a905f3904fed618d3.ctex"]
 
 [params]
 
