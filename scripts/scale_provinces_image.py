@@ -2,7 +2,7 @@ import os
 from PIL import Image
 
 # Path to the original image
-INPUT_IMAGE = os.path.join(os.path.dirname(__file__), '../map/map_data/provinces.png')
+INPUT_IMAGE = os.path.join(os.path.dirname(__file__), '../map/map_data/scaled_provinces/provinces.png')
 # Output directory for scaled images
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '../map/map_data/scaled_provinces')
 
