@@ -24,18 +24,18 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var image_name = null
 	if Input.is_action_just_pressed("set_province_image_full"):
-		image_name = "provinces_9821x6347.png"
+		image_name = "full.png"
 		print("Setting province image to full resolution.")
 	elif Input.is_action_just_pressed("set_province_image_half"):
-		image_name = "provinces_4910x3174.png"
+		image_name = "half.png"
 		print("Setting province image to half resolution.")
 	elif Input.is_action_just_pressed("set_province_image_quarter"):
-		image_name = "provinces_2455x1587.png"
+		image_name = "quarter.png"
 		print("Setting province image to quarter resolution.")
 
 	
 	if image_name != null:
-		var img = Image.load_from_file("res://map/map_data/scaled_provinces/" + image_name)
+		var img = Image.load_from_file("res://map/map_data/lut_scaled/" + image_name)
 		var tex = ImageTexture.create_from_image(img)
 		set_province_image(tex)
 
