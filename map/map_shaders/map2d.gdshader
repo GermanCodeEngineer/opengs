@@ -1,21 +1,32 @@
 shader_type canvas_item;
 
+uniform int lookup_scale = 1;
+uniform int province_border_scale = 1;
 uniform sampler2D lookup_image: source_color, filter_nearest;
 uniform sampler2D color_map_image: source_color, filter_nearest;
 uniform sampler2D province_border_image: source_color, filter_nearest;
 
 void fragment() {
+	float texture_width = float(textureSize(lookup_image,0).x);
+	float texture_height = float(textureSize(lookup_image,0).y);
+	
 	// Variables
 	// Must match MapMode.SECONDARY_OFFSET (150) in map_mode.gd
 	float normalized_offset = 150.0 / float(textureSize(color_map_image,0).y);
 	float checkers_width = 10.0;
-	float texture_width = float(textureSize(lookup_image,0).x);
-	float texture_height = float(textureSize(lookup_image,0).y);
-	int checkers_pattern = int(mod(floor(UV.x * texture_width / checkers_width) + floor(UV.y * texture_height / checkers_width), 2.0));
+
+	float lookup_scale_f = float(lookup_scale);
+	float province_border_scale_f = float(province_border_scale);
+
+	// Adjusted UVs for scaling and rounding
+	vec2 lookup_uv = floor(UV * lookup_scale_f * texture_width) / (lookup_scale_f * texture_width);
+	vec2 border_uv = floor(UV * province_border_scale_f * texture_width) / (province_border_scale_f * texture_width);
+
+	int checkers_pattern = int(mod(floor(lookup_uv.x * texture_width / checkers_width) + floor(lookup_uv.y * texture_height / checkers_width), 2.0));
 
 	// Textures
-	vec3 lookup_texture = texture(lookup_image, UV).rgb;
-	vec3 province_border_texture = texture(province_border_image, UV).rgb;
+	vec3 lookup_texture = texture(lookup_image, lookup_uv).rgb;
+	vec3 province_border_texture = texture(province_border_image, border_uv).rgb;
 
 	// Scale Y coordinate: lookup encodes 256 rows, but color map may be taller
 	float y_scale = 256.0 / float(textureSize(color_map_image, 0).y);
