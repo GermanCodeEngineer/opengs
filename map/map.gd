@@ -22,26 +22,41 @@ func _ready() -> void:
 	await create_map_textures()
 
 func _process(_delta: float) -> void:
-	var image_name = null
 	if Input.is_action_just_pressed("set_resolution_full"):
-		image_name = "full.png"
-		print("Setting province image to full resolution.")
+		set_map_resolution(1)
 	elif Input.is_action_just_pressed("set_resolution_half"):
-		image_name = "half.png"
-		print("Setting province image to half resolution.")
+		set_map_resolution(2)
 	elif Input.is_action_just_pressed("set_resolution_quarter"):
-		image_name = "quarter.png"
-		print("Setting province image to quarter resolution.")
+		set_map_resolution(4)
 
+	# Print lookup_image texture size every frame
+	var lookup_tex = map_material_2d.get_shader_parameter("lookup_image")
+	if lookup_tex != null:
+		var img = lookup_tex.get_image()
+		if img != null:
+			print("[SHADER] lookup_image size: %dx%d" % [img.get_width(), img.get_height()])
 
-	if image_name != null:
+func set_map_resolution(resolution: int) -> void:
+	var image_name = ""
+	match resolution:
+		1:
+			image_name = "full.png"
+			print("Setting resolution to full resolution.")
+		2:
+			image_name = "half.png"
+			print("Setting resolution to half resolution.")
+		4:
+			image_name = "quarter.png"
+			print("Setting resolution to quarter resolution.")
+
+	if image_name != "":
 		var lookup_image := Image.load_from_file("res://map/map_data/lut_scaled/" + image_name)
 		var lookup_texture := ImageTexture.create_from_image(lookup_image)
-		set_lookup_texture(lookup_texture, 1)
+		set_lookup_texture(lookup_texture)
 
 		var border_image := Image.load_from_file("res://map/map_data/bt_scaled/" + image_name)
 		var border_texture := ImageTexture.create_from_image(border_image)
-		set_province_border_texture(border_texture, 1)
+		set_province_border_texture(border_texture)
 
 
 func _wait_for_province_image(max_frames: int = 120) -> Image:
@@ -67,10 +82,6 @@ func create_map_textures() -> void:
 		return
 
 	tex_gen = MapTextureGenerator.new(province_image)
-	var lookup_img = tex_gen.lookup_texture.get_image()
-	print("[DEBUG] Created lookup_texture size: %dx%d" % [lookup_img.get_width(), lookup_img.get_height()])
-	set_lookup_texture(tex_gen.lookup_texture, 1)
-	set_province_border_texture(tex_gen.border_texture, 1)
 	tex_gen.lookup_texture.get_image().save_png("res://map/map_data/lut_preview.png") # remove in PROD, just for visuals in editor
 	tex_gen.border_texture.get_image().save_png("res://map/map_data/bt_preview.png") # remove in PROD, just for visuals in editor
 
@@ -79,6 +90,8 @@ func create_map_textures() -> void:
 	var img = Image.create(1, 1, false, Image.FORMAT_L8)
 	var tex = ImageTexture.create_from_image(img)
 	set_map_sprite_texture(tex)
+
+	set_map_resolution(4)
 
 
 func create_map_modes(db: Database) -> void:
@@ -109,19 +122,13 @@ func set_map_sprite_texture(texture: Texture2D) -> void:
 	var sprite_size = texture.get_size()
 	var viewport_size = sub_viewport.size
 	map_sprite.scale = Vector2(viewport_size.x / sprite_size.x, viewport_size.y / sprite_size.y)
-	print("Set province image with size: %dx%d, scaled to viewport size: %dx%d" % [sprite_size.x, sprite_size.y, viewport_size.x, viewport_size.y])
+	print("Set map sprite texture with size: %dx%d, scaled to viewport size: %dx%d" % [sprite_size.x, sprite_size.y, viewport_size.x, viewport_size.y])
 
-func set_lookup_texture(texture: Texture2D, texture_scale: int) -> void:
-	# Sets the lookup texture and adjusts any related parameters if needed
+func set_lookup_texture(texture: Texture2D)  -> void:
 	map_material_2d.set_shader_parameter("lookup_image", texture)
-	map_material_2d.set_shader_parameter("lookup_scale", texture_scale)
-	# Optionally, adjust size or other properties here if needed
 
-func set_province_border_texture(texture: Texture2D, texture_scale: int) -> void:
-	# Sets the province border texture and adjusts any related parameters if needed
+func set_province_border_texture(texture: Texture2D) -> void:
 	map_material_2d.set_shader_parameter("province_border_image", texture)
-	map_material_2d.set_shader_parameter("province_border_scale", texture_scale)
-	# Optionally, adjust size or other properties here if needed
 
 
 func update_map() -> void:
