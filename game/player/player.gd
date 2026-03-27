@@ -5,7 +5,7 @@ signal province_selected
 @onready var camera: Camera3D = $CameraSocket/Camera3D
 @onready var camera_socket: Node3D = $CameraSocket
 @onready var map_node: Node = get_node("/root/MainGame/Map")
-@export var debug_draw_uv_markers := true
+@export var debug_draw := true
 @onready var map_col: CollisionShape3D = get_node_or_null("/root/MainGame/Map/CollisionShape3D") as CollisionShape3D
 var map_box: BoxShape3D = null
 
@@ -242,8 +242,9 @@ func _ready() -> void:
 		map_box = map_col.shape as BoxShape3D
 	else:
 		map_box = null
-	if debug_draw_uv_markers:
+	if debug_draw:
 		draw_uv_markers()
+		draw_camera_view_rectangle()
 	
 func _process(delta:float) -> void:
 	if !camera_can_process: return
@@ -386,3 +387,52 @@ func draw_uv_markers() -> void:
 		var uv: Vector2 = corners[i] as Vector2
 		var world_pos: Vector3 = map_uv_to_world(uv)
 		_make_cross_marker(world_pos, "UVMarker_%d" % i)
+
+
+# Draws a rectangle on the map representing the camera's visible area
+func draw_camera_view_rectangle() -> void:
+	if map_node == null or map_box == null:
+		return
+
+	# Remove previous rectangle if exists
+	if map_node.has_node("CameraViewRect"):
+		map_node.get_node("CameraViewRect").queue_free()
+
+	# Get viewport size
+	var viewport := get_viewport()
+	var size := viewport.get_visible_rect().size
+
+	# Project viewport corners to world, then to map plane
+	var corners := [
+		Vector2(0, 0),
+		Vector2(size.x, 0),
+		Vector2(size.x, size.y),
+		Vector2(0, size.y)
+	]
+	var world_points := []
+	for screen_pos in corners:
+		var from = camera.project_ray_origin(screen_pos)
+		var dir = camera.project_ray_normal(screen_pos)
+		# Intersect with map plane (assume y=map height)
+		var center: Vector3 = map_node.global_transform.origin
+		var plane_y = center.y
+		if abs(dir.y) < 0.0001:
+			continue # Avoid division by zero
+		var t = (plane_y - from.y) / dir.y
+		var world_pos = from + dir * t
+		world_points.append(world_pos)
+
+	# Draw rectangle using Line3D for thickness
+	if world_points.size() < 2:
+		return
+
+	var line_node := Line3D.new()
+	line_node.name = "CameraViewRect"
+	line_node.width = 0.5 # Much thicker
+	line_node.default_color = Color(0, 1, 0, 0.7)
+	for pt in world_points:
+		line_node.add_point(pt)
+	# Close the rectangle
+	line_node.add_point(world_points[0])
+
+	map_node.add_child(line_node)
